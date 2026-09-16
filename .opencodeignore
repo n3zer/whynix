@@ -1,0 +1,5 @@
+.git
+result
+.direnv
+.nix-profile
+.nix-defexpr
