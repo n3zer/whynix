@@ -1,0 +1,15 @@
+//---------------------- input ----------------------\\
+input {
+    keyboard {
+        xkb {
+            // US + Russian layouts, switch with Left Alt+Shift.
+            layout "us,ru"
+            options "grp:alt_shift_toggle"
+        }
+    }
+    touchpad {
+        tap
+        natural-scroll
+    }
+    focus-follows-mouse
+}

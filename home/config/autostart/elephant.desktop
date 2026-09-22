@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Elephant
+Comment=Elephant provider backend for Walker
+Exec=elephant
+Terminal=false
+X-GNOME-Autostart-enabled=true

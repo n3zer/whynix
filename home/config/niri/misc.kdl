@@ -1,0 +1,11 @@
+//---------------------- startup ----------------------\\
+spawn-at-startup "quickshell"
+spawn-at-startup "bash" "-c" "(awww-daemon &) ; until wallpaper-cycle restore; do sleep 0.2; done"
+
+
+//---------------------- misc configuration ----------------------\\
+screenshot-path "~/Pictures/Screenshots/screenshot_niri_%Y-%m-%d %H-%M-%S.png"
+prefer-no-csd
+hotkey-overlay {
+    skip-at-startup
+}

@@ -1,0 +1,8 @@
+//---------------------- keybinds ----------------------\\
+// Binds live in the user-writable file ~/.config/niri/binds.user.kdl so they
+// can be edited from the quickshell Keybinds page. niri watches included
+// files and live-reloads on change — no rebuild needed for bind edits.
+//
+// keys:
+//   Mod is Super when niri runs on a TTY.
+include optional=true "~/.local/state/niri/binds.user.kdl"
