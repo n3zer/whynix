@@ -37,4 +37,7 @@ in
     omniroute.package
   ];
 
+  # omniroute daemon — autostart at boot (systemd service defined in omniroute.nix)
+  systemd.services.omniroute = omniroute.service;
+
 }

@@ -86,6 +86,9 @@ Rectangle {
         // workspaces. A scratchpad toggle in visual terms goes to the
         // named workspace "magic" (created by the user's niri config),
         // matching the original Brain_Shell behaviour.
+        //
+        // `focus-workspace` accepts an INDEX (idx, position on monitor)
+        // or a NAME — never the internal `id`, which can have gaps.
         if (isSpecialToggle) {
             dispatchProc.command = ["niri", "msg", "action", "focus-workspace", "magic"]
         } else {
@@ -93,11 +96,12 @@ Rectangle {
         }
         dispatchProc.running = false
         dispatchProc.running = true
-        // Optimistically reflect in UI
+        // Optimistically reflect in UI: match by idx and store the real id
         if (isSpecialToggle) {
             root.isScratchpad = !root.isScratchpad
         } else {
-            root.focusedId = Number(wsTarget)
+            const ws = root.wsData.find(w => w.idx === Number(wsTarget))
+            if (ws !== undefined) root.focusedId = ws.id
         }
     }
 
@@ -117,29 +121,29 @@ Rectangle {
     }
 
     // ---Wheel: cycle through occupied workspaces ---
-    WheelHandler {
-        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-        onWheel: function(event) {
-            if (root.scrollBusy) return // Ignore if still in cooldown
-            root.scrollBusy = true
-            scrollCooldown.restart()
-            let occupied = root.wsData.map(w => w.id).sort((a, b) => a - b)
-            if (occupied.length === 0) return // Safety check
+WheelHandler {
+            acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+            onWheel: function(event) {
+                if (root.scrollBusy) return // Ignore if still in cooldown
+                root.scrollBusy = true
+                scrollCooldown.restart()
+                // Cycle through workspaces in display order (idx)
+                let byIdx = root.wsData.slice().sort((a, b) => a.idx - b.idx)
+                if (byIdx.length === 0) return // Safety check
 
-            let currentId = root.focusedId !== -1 ? root.focusedId : occupied[0]
-            let idx = occupied.indexOf(currentId)
-            if (idx === -1) idx = 0 // Fallback if current isn't in the array
+                let curIdx = byIdx.findIndex(w => w.id === root.focusedId)
+                if (curIdx === -1) curIdx = 0 // Fallback if current isn't in the array
 
-            // Inverted scroll logic: Up (>0) goes to Next, Down (<0) goes to Prev
-            if (event.angleDelta.y < 0) {
-                idx = (idx + 1) % occupied.length
-            } else {
-                idx = (idx - 1 + occupied.length) % occupied.length
+                // Inverted scroll logic: Up (>0) goes to Next, Down (<0) goes to Prev
+                if (event.angleDelta.y < 0) {
+                    curIdx = (curIdx + 1) % byIdx.length
+                } else {
+                    curIdx = (curIdx - 1 + byIdx.length) % byIdx.length
+                }
+
+                root.dispatchWorkspace(byIdx[curIdx].idx)
             }
-
-            root.dispatchWorkspace(occupied[idx])
         }
-    }
 
     // --- 3. Workspace Dots ---
     Row {
@@ -160,8 +164,11 @@ Rectangle {
             delegate: Rectangle {
                 id: dot
 
-                property var ws: root.wsData.find(w => w.id === index + 1)
-                property bool isActive: root.focusedId === (index + 1)
+                // niri separates `id` (arbitrary, can have gaps) from `idx`
+                // (display position, always contiguous 1..N). Dots must be
+                // laid out by idx but focused/dispatched by id.
+                property var ws: root.wsData.find(w => w.idx === index + 1)
+                property bool isActive: ws !== undefined && ws.id === root.focusedId
                 property bool isOccupied: ws !== undefined && ws.active_window_id !== null
                 property bool isUrgent:   ws !== undefined && ws.is_urgent
 
@@ -208,7 +215,7 @@ Rectangle {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.dispatchWorkspace(index + 1)
+                    onClicked: { if (dot.ws !== undefined) root.dispatchWorkspace(dot.ws.idx) }
                 }
             }
         }

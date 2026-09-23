@@ -59,9 +59,9 @@ PopupWindow {
 		anchors.fill: parent
 		edge:             "left"
 		hoverEnabled:     false
-		triggerHovered:   Popups.archMenuTriggerHovered
-		open:             Popups.archMenuOpen
-		onCloseRequested: Popups.archMenuOpen = false
+		triggerHovered:   Popups.nixMenuTriggerHovered
+		open:             Popups.nixMenuOpen
+		onCloseRequested: Popups.nixMenuOpen = false
 
 		Item {
 			id: sizer

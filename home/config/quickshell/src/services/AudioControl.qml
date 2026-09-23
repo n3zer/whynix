@@ -197,7 +197,6 @@ Item {
 
         readonly property int trackHeight: 160
         readonly property int barW:        22
-        readonly property int thumbD:      barW - 6
 
         signal volumeChanged(real value)
         signal muteToggled()
@@ -244,29 +243,12 @@ Item {
                         Behavior on height { NumberAnimation { duration: 80; easing.type: Easing.OutCubic } }
                     }
 
-                    // Thumb
-                    Rectangle {
-                        id: thumb
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        width:  col.thumbD
-                        height: width
-                        radius: width / 2
-                        color:  col.muted ? Qt.rgba(1,1,1,0.3) : "#ffffff"
-                        y: {
-                            var travel = track.height - height
-                            return Math.max(0, Math.min(travel, (1.0 - col.value) * travel))
-                        }
-                        Behavior on color { ColorAnimation { duration: 150 } }
-                    }
-
                     // Drag to change volume
                     MouseArea {
                         anchors.fill: parent
                         cursorShape:  Qt.SizeVerCursor
                         function calc(my) {
-                            var travel = track.height - thumb.height
-                            return Math.max(0.0, Math.min(1.0,
-                                1.0 - (my - thumb.height / 2) / travel))
+                            return Math.max(0.0, Math.min(1.0, 1.0 - my / track.height))
                         }
                         onPressed:         col.volumeChanged(calc(mouseY))
                         onPositionChanged: if (pressed) col.volumeChanged(calc(mouseY))

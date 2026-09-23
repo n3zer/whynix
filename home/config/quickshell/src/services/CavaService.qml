@@ -32,6 +32,7 @@ QtObject {
             "bash", "-c",
             "mkdir -p /tmp/brain_shell && " +
             "printf '[general]\\nbars = 32\\nframerate = 30\\nnoise_reduction = 77\\n\\n" +
+            "[input]\\nmethod = pulse\\nsource = auto\\n\\n" +
             "[output]\\nmethod = raw\\nraw_target = /dev/stdout\\n" +
             "data_format = ascii\\nascii_max_range = 100\\n" +
             "bar_delimiter = 59\\nframe_delimiter = 10\\n' " +

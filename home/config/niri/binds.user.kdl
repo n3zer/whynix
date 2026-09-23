@@ -6,7 +6,13 @@ binds {
     Mod+T           { spawn "alacritty"; }            // Open a terminal
     Mod+A                { spawn-sh "quickshell ipc call dashboard-launcher toggle"; }     // Open the Apps page in the bar
     Mod+W                { spawn "wallpaper-cycle"; }       // Cycle the wallpaper
-    Mod+Shift+Slash      { show-hotkey-overlay; }          // Show the list of active hotkeys
+
+    // ---- clipboard (work from any keyboard layout) ----
+    // wtype injects a latin Ctrl+C/V/X keysym, so copy/paste/cut work even
+    // when the Cyrillic layout is active (app-level Ctrl+* would send "с/м/ч").
+    Mod+C                { spawn "wtype" "-M" "ctrl" "-k" "c"; }     // Copy
+    Mod+Shift+V          { spawn "wtype" "-M" "ctrl" "-k" "v"; }     // Paste
+    Mod+X                { spawn "wtype" "-M" "ctrl" "-k" "x"; }     // Cut
 
     // ---- audio ----
     F9                    allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }       // Mute or unmute the audio
@@ -18,7 +24,7 @@ binds {
     XF86AudioMute         allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }       // Mute or unmute the audio (media key)
 
     // ---- windows and columns ----
-    Mod+Q                { close-window; }                 // Close the focused window
+    Mod+U                { close-window; }                 // Close the focused window
     Mod+V                { toggle-window-floating; }       // Float or unfloat the focused window
     Mod+F                { maximize-column; }              // Maximize the focused column
     Mod+Shift+F          { fullscreen-window; }            // Make the focused window fullscreen

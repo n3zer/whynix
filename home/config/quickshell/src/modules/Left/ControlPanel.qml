@@ -6,8 +6,8 @@ IconBtn {
 		text: "󱄅" 
 		textColor: "#5277C3"
 		onClicked: {
-        var next = !Popups.archMenuOpen
+        var next = !Popups.nixMenuOpen
         Popups.closeAll()
-        Popups.archMenuOpen = next
+        Popups.nixMenuOpen = next
     }
 }

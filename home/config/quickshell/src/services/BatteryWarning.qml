@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import "../"
 
-// Low battery warning — FloatingWindow, centered by the WM (Hyprland floats center).
+// Low battery warning — FloatingWindow, centered by the WM (niri floats center).
 // Auto-dismisses after `timeout` ms. Click anywhere to dismiss early.
 
 FloatingWindow {

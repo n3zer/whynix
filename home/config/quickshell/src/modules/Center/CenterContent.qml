@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Effects
-import Quickshell.Hyprland
 import Quickshell.Services.Mpris
 import Quickshell.Io
 import "../../"
@@ -42,26 +41,20 @@ Item {
 
 	property string activeTitle: "Desktop"
 
-	// ── App name helper ───────────────────────────────────────────────────────    
-	// 2. Process to fetch the initialTitle
+	// ── App name helper ───────────────────────────────────────────────────────
+	// Queries `niri msg --json focused-window` (prints `null` when no window).
 	property var _titleProc: Process {
-		command: ["hyprctl", "activewindow", "-j"]
+		command: ["niri", "msg", "--json", "focused-window"]
 		running: false
-
-		onRunningChanged: {
-			if (running) {
-			}
-		}
 
 		stdout: StdioCollector {
 			id: titleOut
 		}
 
 		onExited: function(exitCode, exitStatus) {
-
-			var out = titleOut.text.trim()            
-			// Check for empty, Invalid, or empty JSON object
-			if (exitCode !== 0 || out === "" || out === "Invalid" || out === "{}") {
+			var out = titleOut.text.trim()
+			// Check for empty / null / empty JSON object
+			if (exitCode !== 0 || out === "" || out === "null" || out === "{}") {
 				root.activeTitle = "Desktop"
 				return
 			}
@@ -69,7 +62,7 @@ Item {
 			try {
 				// Parse the JSON natively in Quickshell
 				var data = JSON.parse(out)
-				var title = data.initialTitle || ""
+				var title = data.title || data.app_id || ""
 
 				if (title !== "") {
 					// Capitalize the first letter (e.g., "kitty" -> "Kitty")
@@ -84,16 +77,15 @@ Item {
 		}
 	}
 
-	Connections{
-		target: Hyprland
-		// 3. Your Raw Event Monitor
-		function onRawEvent(event) {
-			// 3. Trigger title fetch on any window/workspace focus change
-			var titleTriggers = ["workspace", "activewindow", "activespecial", "destroyworkspace", "closewindow", "changefloatingmode"]
-
-			if (titleTriggers.includes(event.name)) {
-				_titleProc.running = false
-				_titleProc.running = true
+	// Poll while niri is running — replaces the Hyprland raw event stream.
+	Timer {
+		interval: 1500
+		repeat:   true
+		running:  true
+		onTriggered: {
+			if (!root._titleProc.running) {
+				root._titleProc.running = false
+				root._titleProc.running = true
 			}
 		}
 	}
@@ -935,7 +927,7 @@ Item {
 					var mm = name.match(/\(([^)]*)\)/)
 					if (mm) short = mm[1]
 				}
-				if (short) root.showToast("⌨", short.toUpperCase())
+				if (short) root.showToast("🌐", short.toUpperCase())
 			}
 		}
 	}

@@ -265,12 +265,12 @@ QtObject {
         }
     }
 
-    property var archMenu: IpcHandler {
+    property var nixMenu: IpcHandler {
         target: "PowerMenu-toggle"
         function toggle() {
-            var next = !Popups.archMenuOpen
+            var next = !Popups.nixMenuOpen
             Popups.closeAll()
-            Popups.archMenuOpen = next
+            Popups.nixMenuOpen = next
         }
     }
 

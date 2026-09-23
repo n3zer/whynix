@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell.Io
 
 // Controls fans via nbfc-linux.
-// Default mode assumes "auto" — set by hyprland exec-once at startup.
+// Default mode assumes "auto" — set by niri spawn-at-startup.
 //
 // Modes:
 //   "quiet" → nbfc set -s 0

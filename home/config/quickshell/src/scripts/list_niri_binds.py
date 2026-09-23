@@ -58,6 +58,13 @@ def read_binds(path):
             mods, key = parse_combo(combo)
             if not key or not action:
                 continue
+            # label = trailing comment when present, else fall back to action
+            if comment:
+                label = comment
+            elif args:
+                label = action + " " + args
+            else:
+                label = action
             binds.append({
                 "combo": combo,
                 "mods": mods,
@@ -65,6 +72,7 @@ def read_binds(path):
                 "action": action,
                 "args": args,
                 "comment": comment,
+                "label": label,
             })
     return binds
 

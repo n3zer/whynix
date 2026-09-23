@@ -8,3 +8,8 @@ window-rule {
     match app-id="firefox"
     default-column-width { proportion 1.0; }
 }
+
+// Runtime overrides (seat from WallpaperService UpdateBorders):
+// optional so a missing file (fresh profile, before any wallpaper apply)
+// never breaks parsing.
+include optional=true "~/.local/state/niri/focus-ring.user.kdl"

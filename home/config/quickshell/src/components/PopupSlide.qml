@@ -8,11 +8,11 @@ import "../"
 // its own Popups.* bool into `open` and optionally into
 // `triggerHovered`, then listens for `closeRequested`.
 //
-// Usage (click-only popup — e.g. ArchMenu):
+// Usage (click-only popup — e.g. NixMenu):
 //   PopupSlide {
 //       id: slide
 //       edge: "left"
-//       open: Popups.archMenuOpen
+//       open: Popups.nixMenuOpen
 //       // content
 //   }
 //

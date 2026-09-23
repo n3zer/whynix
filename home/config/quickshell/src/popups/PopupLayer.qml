@@ -24,7 +24,7 @@ Item {
     // ── Border-anchored popups ───────────────────────────────
 
     // Left border → center
-    ArchMenu {
+    NixMenu {
         anchorWindow: root.leftBorder
     }
 

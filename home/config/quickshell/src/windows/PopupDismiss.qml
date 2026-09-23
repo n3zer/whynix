@@ -2,7 +2,6 @@ import Quickshell
 import Quickshell.Wayland
 import QtQuick
 import "../"
-import Quickshell.Hyprland
 
 // Transparent fullscreen overlay that dismisses all popups when:
 //   - The user clicks anywhere on screen
@@ -77,17 +76,6 @@ PanelWindow {
         Keys.onEscapePressed: {
             Popups.closeAll()
             ScreenRecService.cancelSetup()
-        }
-    }
-    
-        Connections {
-        target: Hyprland
-        
-        // Quickshell emits (name, data) for raw events
-        function onRawEvent(event) {
-            if (event.name === "workspace" || event.name === "activemonitor" || event.name === "activespecial" || event.name === "openwindow") {
-                Popups.closeAll();
-            }
         }
     }
 }

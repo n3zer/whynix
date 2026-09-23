@@ -8,7 +8,7 @@ QtObject {
     property bool networkOpen:       false
     property bool batteryOpen:       false
     property bool notificationsOpen: false
-    property bool archMenuOpen:      false
+    property bool nixMenuOpen:       false
     property bool dashboardOpen:     false
     property bool wallpaperOpen:     false
     property bool notificationToastOpen:    false
@@ -26,7 +26,7 @@ QtObject {
     property string networkPage: "wifi"
 
     // ── Per-popup trigger hover state ─────────────────────────────────────────
-    property bool archMenuTriggerHovered: false
+    property bool nixMenuTriggerHovered: false
     property bool audioTriggerHovered:         false
     property bool networkTriggerHovered:       false
     property bool batteryTriggerHovered:       false
@@ -46,25 +46,28 @@ QtObject {
     property string confirmAction:  ""
     property string confirmGfxMode: ""
     property bool   confirmRunning: false
+    property var    confirmCallback: null   // invoked on "custom" confirm actions
 
-    function showConfirm(title, message, label, action, gfxMode) {
-        confirmTitle   = title
-        confirmMessage = message
-        confirmLabel   = label
-        confirmAction  = action
-        confirmGfxMode = gfxMode ?? ""
-        confirmOpen    = true
+    function showConfirm(title, message, label, action, gfxMode, callback) {
+        confirmTitle    = title
+        confirmMessage  = message
+        confirmLabel    = label
+        confirmAction   = action
+        confirmGfxMode  = gfxMode ?? ""
+        confirmCallback = callback ?? null
+        confirmOpen     = true
     }
 
     function cancelConfirm() {
-        confirmOpen    = false
-        confirmAction  = ""
-        confirmGfxMode = ""
+        confirmOpen     = false
+        confirmAction   = ""
+        confirmGfxMode  = ""
+        confirmCallback = null
     }
 
     // ── Global state ──────────────────────────────────────────────────────────
     readonly property bool anyOpen: audioOpen || networkOpen || batteryOpen
-                                    || notificationsOpen || archMenuOpen
+                                    || notificationsOpen || nixMenuOpen
                                     || dashboardOpen || wallpaperOpen || quickOpen
                                     || clipboardOpen
 
@@ -73,7 +76,7 @@ QtObject {
         networkOpen       = false
         batteryOpen       = false
         notificationsOpen = false
-        archMenuOpen      = false
+        nixMenuOpen      = false
         dashboardOpen     = false
         wallpaperOpen     = false
         quickOpen         = false

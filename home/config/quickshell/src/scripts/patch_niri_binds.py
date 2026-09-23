@@ -112,7 +112,7 @@ def main():
                 new_combo = to_niri_combo(op.get("mods", ""), op.get("key", ""))
             for i, a in enumerate(annotated):
                 if a and a["combo"] == target:
-                    a["line"] = re.sub(r"^[^\s{]+", new_combo, a["line"], count=1)
+                    a["line"] = re.sub(r"^(\s*)[^\s{]+", r"\1" + new_combo, a["line"], count=1)
                     a["combo"] = _combo_of(new_combo)
                     break
 
@@ -123,7 +123,7 @@ def main():
             continue
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
-            f.write(text[/content]]); f.write(text
+            f.write(text)
     print("ok")
 
 if __name__ == "__main__":

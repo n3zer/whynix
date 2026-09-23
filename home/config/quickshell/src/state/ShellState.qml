@@ -1,7 +1,6 @@
 pragma Singleton
 import Quickshell
 import QtQuick
-import Quickshell.Io
 import Quickshell.Services.UPower
 import "../."
 
@@ -61,60 +60,4 @@ QtObject {
         }
     }
 
-    // ── Keybind Interception / Hyprland Submap Controller ─────────────────────
-    
-    property Process submapProcess: Process {}
-
-    property Connections keybindListener: Connections {
-        target: KeybindService 
-        
-        function onIsCapturingChanged() {
-            if (KeybindService.isCapturing) {
-                // Enter passthrough mode (disables Hyprland binds)
-                if (configProvider === "lua") {
-                    submapProcess.command = ["hyprctl", "dispatch", "hl.dsp.submap('BrainShell_clean')"]
-                } else {
-                    submapProcess.command = ["hyprctl", "dispatch", "submap", "BrainShell_clean"]
-                }
-            } else {
-                // Exit passthrough mode (re-enables Hyprland binds)
-                if (configProvider === "lua") {
-                    submapProcess.command = ["hyprctl", "dispatch", "hl.dsp.submap('reset')"]
-                } else {
-                    submapProcess.command = ["hyprctl", "dispatch", "submap", "reset"]
-                }
-            }
-            
-            submapProcess.running = true
-        }
     }
-    
-    property string configProvider: "lua"
-    
-    // Watch the JSON file written by the installer
-    property var _providerFile: FileView {
-        id: providerFile
-        path: Quickshell.env("HOME") + "/.config/Brain_Shell/src/user_data/config_Provider.json"
-        watchChanges: true
-        
-        onFileChanged: {
-            reload()
-        }
-        
-        onLoaded: {
-            _parse(providerFile.text())
-        }
-    }
-    
-    function _parse(jsonString) {
-        if (!jsonString || jsonString === "") return;
-        try {
-            let data = JSON.parse(jsonString)
-            if (data.configProvider) {
-                root.configProvider = data.configProvider
-            }
-        } catch (e) {
-            console.error("Brain Shell: Failed to parse config_Provider.json")
-        }
-    }
-}

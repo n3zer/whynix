@@ -140,6 +140,23 @@ StatCard {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    //  Monitors (DPMS) — niri msg power-off/on
+    // ─────────────────────────────────────────────────────────────────────────
+    property bool monitorsOn: true
+
+    Process { id: dpmsOffProc; command: ["niri", "msg", "action", "power-off-monitors"]; running: false }
+    Process { id: dpmsOnProc;  command: ["niri", "msg", "action", "power-on-monitors"];  running: false }
+    function _dpmsToggle() {
+        if (root.monitorsOn) {
+            dpmsOffProc.running = false; dpmsOffProc.running = true
+            root.monitorsOn = false
+        } else {
+            dpmsOnProc.running = false; dpmsOnProc.running = true
+            root.monitorsOn = true
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     //  Caffeine  (systemd-inhibit)
     // ─────────────────────────────────────────────────────────────────────────
     property bool caffeineOn: false
@@ -425,155 +442,18 @@ StatCard {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Focus Mode  (hyprctl gaps)
+    //  Focus Mode — collapses the bar to a thin border (TopBar/Border react to
+    //  ShellState.focusMode).
     // ─────────────────────────────────────────────────────────────────────────
-    property int _savedGapsIn: 5; property int _savedGapsOut: 10
-
-    Process { id: readGapsIn
-        command: ["bash", "-c",
-            "hyprctl getoption general:gaps_in -j | python3 -c \"import sys,json; d=json.load(sys.stdin); print(d.get('int',5))\""]
-        running: false
-        stdout: SplitParser { onRead: function(l) { var v=parseInt(l.trim()); if(!isNaN(v)) root._savedGapsIn=v } }
-        onRunningChanged: if (!running) readGapsOut.running = true }
-    Process { id: readGapsOut
-        command: ["bash", "-c",
-            "hyprctl getoption general:gaps_out -j | python3 -c \"import sys,json; d=json.load(sys.stdin); print(d.get('int',10))\""]
-        running: false
-        stdout: SplitParser { onRead: function(l) { var v=parseInt(l.trim()); if(!isNaN(v)) root._savedGapsOut=v } }
-        onRunningChanged: if (!running) applyFocusGaps.running = true }
-    Process { id: applyFocusGaps
-        command: ["bash", "-c",
-            "hyprctl keyword general:gaps_in 0 && hyprctl keyword general:gaps_out 10"]
-        running: false; onRunningChanged: if (!running) ShellState.focusMode = true }
-    Process { id: restoreGaps; command: []; running: false
-        onRunningChanged: if (!running) ShellState.focusMode = false }
     function _focusToggle() {
-        if (ShellState.focusMode) {
-            restoreGaps.command = ["bash", "-c",
-                "hyprctl keyword general:gaps_in "  + root._savedGapsIn  +
-                " && hyprctl keyword general:gaps_out " + root._savedGapsOut]
-            restoreGaps.running = false; restoreGaps.running = true
-        } else { readGapsIn.running = false; readGapsIn.running = true }
+        ShellState.focusMode = !ShellState.focusMode
     }
-    
+
     Connections {
         target: IpcManager
         function onFocusToggleRequested() {
             root._focusToggle()
         }
-    }
-
-// ─────────────────────────────────────────────────────────────────────────
-    //  Filter  (Native Hyprland Lua)
-    //
-    //  Tile click: runs bash `find`, opens picker popup above the tile.
-    //  Picker has "Off" at top + all available shaders.
-    //  Selecting a shader: resolves absolute path and uses `hyprctl eval hl.config()`
-    //  Selecting the active shader or "Off": clears the shader in Hyprland.
-    // ─────────────────────────────────────────────────────────────────────────
-    property string currentFilter:    ""
-    property var    filterList:       []
-    property bool   filterPickerOpen: false
-    
-    // Add your standard shader directories here (space-separated)
-    property string shaderPaths: "~/.config/hypr/shaders ~/.local/share/hypr/shaders /usr/share/hyprshade/shaders ~/.local/src/Brain_Shell/src/config/shaders ~/.config/quickshell/src/config/shaders"
-
-    // Check process stays exactly the same — it already reads cleanly from Hyprland!
-    Process {
-        id: filterCheckProc
-        command: ["bash", "-c",
-            "hyprctl getoption decoration:screen_shader -j 2>/dev/null" +
-            " | python3 -c \"" +
-            "import sys,json,os;" +
-            "d=json.load(sys.stdin);" +
-            "s=d.get('str','').strip();" +
-            "print('' if s in ('','[[EMPTY]]') else os.path.splitext(os.path.basename(s))[0])\""]
-        running: false
-        stdout: StdioCollector {
-            onStreamFinished: {
-                root.currentFilter = text.trim()
-            }
-        }
-    }
-
-    Process {
-        id: filterApplyProc
-        command: []
-        running: false
-        onRunningChanged: if (!running) {
-            filterCheckProc.running = false
-            filterCheckProc.running = true
-        }
-    }
-
-    function _filterApply(name) {
-        var turningOff = (name === "" || name === root.currentFilter)
-        root.currentFilter = turningOff ? "" : name
-
-        var isLua = ShellState.configProvider === "lua"
-
-        // Handle DPMS toggling based on provider
-        var damageCmd = isLua 
-            ? ` && hyprctl dispatch 'hl.dsp.dpms({ action = "disable" })' && hyprctl dispatch 'hl.dsp.dpms({ action = "enable" })'`
-            : ` && hyprctl dispatch dpms off && hyprctl dispatch dpms on`
-
-        if (turningOff) {
-            var offCmd = isLua 
-                ? "hyprctl eval \"hl.config({ decoration = { screen_shader = '' } })\""
-                : "hyprctl keyword decoration:screen_shader '[[EMPTY]]'"
-                
-            filterApplyProc.command = ["bash", "-c", offCmd + damageCmd]
-        } else {
-            var resolveCmd =
-                "TARGET=$(find " + root.shaderPaths +
-                " -maxdepth 1 -type f \\( -name '" + name + ".glsl' -o -name '" + name + ".frag' \\)" +
-                " 2>/dev/null | head -n 1); "
-                
-            var onCmd = isLua
-                ? "if [ -n \"$TARGET\" ]; then hyprctl eval \"hl.config({ decoration = { screen_shader = '$TARGET' } })\"" + damageCmd + "; fi"
-                : "if [ -n \"$TARGET\" ]; then hyprctl keyword decoration:screen_shader \"$TARGET\"" + damageCmd + "; fi"
-
-            filterApplyProc.command = ["bash", "-c", resolveCmd + onCmd]
-        }
-
-        filterApplyProc.running = false
-        filterApplyProc.running = true
-        root.filterPickerOpen = false
-    }
-
-    Connections {
-        target: WallpaperService
-        function onWallpaperApplied(path) {
-            filterCheckProc.running = false
-            filterCheckProc.running = true
-        }
-    }
-
-    Connections {
-        target: Popups
-        function onDashboardOpenChanged() {
-            if (!Popups.dashboardOpen) root.filterPickerOpen = false
-        }
-    }
-
-    Process {
-        id: filterListProc
-        // Replaces `hyprshade ls` by searching your directories and stripping the file extensions
-        command: ["bash", "-c", "find " + root.shaderPaths + " -maxdepth 1 -type f \\( -name '*.glsl' -o -name '*.frag' \\) 2>/dev/null | rev | cut -d/ -f1 | rev | sed 's/\\.[^.]*$//' | sort -u"]
-        running: false
-        stdout: SplitParser {
-            onRead: function(l) {
-                var n = l.trim()
-                if (n !== "") root.filterList = root.filterList.concat([n])
-            }
-        }
-    }
-
-    function _filterOpen() {
-        root.filterList = []
-        filterListProc.running = false
-        filterListProc.running = true
-        root.filterPickerOpen  = true
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -599,7 +479,6 @@ StatCard {
         caffeineCheck.running   = true
         hotspotCheck.running    = true
         airplaneCheck.running   = true
-        filterCheckProc.running = true
         hsCfgLoadProc.running   = true
         hsIfaceProc.running     = true
         hsActiveCheckProc.running = true
@@ -811,6 +690,11 @@ StatCard {
                     }
                     TglBtn {
                         width: tileGrid.btnW; height: tileGrid.btnH
+                        on: root.monitorsOn; icon: "󰛧"; label: "Monitors"
+                        onToggled: root._dpmsToggle()
+                    }
+                    TglBtn {
+                        width: tileGrid.btnW; height: tileGrid.btnH
                         on: root.caffeineOn; icon: "󰅶"; label: "Caffeine"
                         onToggled: root._caffeineToggle()
                     }
@@ -826,6 +710,7 @@ StatCard {
                         label: "Do Not Disturb"
                         onToggled: root._dndToggle()
                     }
+                    // Screen capture tile
                     TglBtn {
                         width: tileGrid.btnW; height: tileGrid.btnH
                         on:    ShellState.screenRecord || ScreenRecService.recording
@@ -842,193 +727,8 @@ StatCard {
                             }
                         }
                     }
-                    // Filter tile — opens picker, does not toggle directly
-                    TglBtn {
-                        width: tileGrid.btnW; height: tileGrid.btnH
-                        on:       root.currentFilter !== ""
-                        icon:     "󱡓"
-                        label:    "Filter"
-                        sublabel: root.currentFilter !== "" ? root.currentFilter : ""
-                        onToggled: root._filterOpen()
-                    }
                 }
             }
         }
-    }
-
-    // ── Filter picker popup ───────────────────────────────────────────────────
-    // Floats above the bottom-right tile. z:20 renders it over the grid.
-    // Anchored bottom-right of the StatCard's inner area.
-    Rectangle {
-        id: filterPicker
-        visible:  root.filterPickerOpen
-        z:        20
-        
-        onVisibleChanged: {
-            if (visible) {
-                forceActiveFocus()
-            } else {
-                root.forceActiveFocus()
-            }
-        }
-
-        Keys.onEscapePressed: function(event) {
-            root.filterPickerOpen = false
-            event.accepted = true // <--- Prevents the dashboard from closing
-        }
-
-        anchors {
-            right:        parent.right
-            bottom:       parent.bottom
-            rightMargin:  12
-            bottomMargin: 12
-        }
-
-        width:  180
-        // Height fits "Off" row + all shader rows, capped at 280
-        height: Math.min(280, pickerCol.implicitHeight + 16)
-        radius: Theme.cornerRadius
-
-        color: Qt.rgba(
-            Math.min(1, Theme.background.r + 0.05),
-            Math.min(1, Theme.background.g + 0.05),
-            Math.min(1, Theme.background.b + 0.05),
-            0.98)
-        border.color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.10)
-        border.width: 1
-
-        // Subtle entrance scale + fade
-        opacity: root.filterPickerOpen ? 1 : 0
-        scale:   root.filterPickerOpen ? 1 : 0.95
-        Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-        Behavior on scale   { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-        transformOrigin: Item.BottomRight
-
-        // Dismiss when clicking outside the picker
-        MouseArea {
-            anchors.fill: parent
-            // Swallow clicks so they don't fall through to tiles below
-            onClicked: {} // intentionally empty — keeps picker open on internal clicks
-        }
-
-        Flickable {
-            anchors { fill: parent; margins: 8 }
-            contentWidth:   width
-            contentHeight:  pickerCol.implicitHeight
-            clip:           true
-            boundsBehavior: Flickable.StopAtBounds
-
-            Column {
-                id: pickerCol
-                width: parent.width
-                spacing: 2
-
-                // Header label
-                Text {
-                    width: parent.width
-                    text: "SHADER"
-                    font.pixelSize: 9; font.weight: Font.Bold
-                    color: Qt.rgba(Theme.active.r, Theme.active.g, Theme.active.b, 0.55)
-                    leftPadding: 4
-                    bottomPadding: 4
-                }
-
-                // "Off" row — always first
-                Rectangle {
-                    width:  parent.width
-                    height: 28
-                    radius: 6
-                    property bool isActive: root.currentFilter === ""
-                    color: isActive
-                        ? Qt.rgba(Theme.active.r, Theme.active.g, Theme.active.b, 0.14)
-                        : offH.hovered ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.07) : "transparent"
-                    Behavior on color { ColorAnimation { duration: 100 } }
-
-                    Row {
-                        anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                        spacing: 8
-                        Text {
-                            text:           parent.parent.isActive ? "●" : "○"
-                            font.pixelSize: 9
-                            color: parent.parent.isActive ? Theme.active : Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.30)
-                            anchors.verticalCenter: parent.verticalCenter
-                            Behavior on color { ColorAnimation { duration: 100 } }
-                        }
-                        Text {
-                            text:           "Off"
-                            font.pixelSize: 12
-                            color: parent.parent.isActive ? Theme.active : Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.65)
-                            anchors.verticalCenter: parent.verticalCenter
-                            Behavior on color { ColorAnimation { duration: 100 } }
-                        }
-                    }
-                    HoverHandler { id: offH; cursorShape: Qt.PointingHandCursor }
-                    TapHandler   { onTapped: root._filterApply("") }
-                }
-
-                // Divider
-                Rectangle {
-                    width: parent.width; height: 1
-                    color: Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.07)
-                }
-
-                // Shader rows — populated by hyprshade ls
-                Repeater {
-                    model: root.filterList
-                    delegate: Rectangle {
-                        required property string modelData
-                        property bool isActive: root.currentFilter === modelData
-
-                        width:  pickerCol.width
-                        height: 28
-                        radius: 6
-                        color: isActive
-                            ? Qt.rgba(Theme.active.r, Theme.active.g, Theme.active.b, 0.14)
-                            : itemH.hovered ? Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.07) : "transparent"
-                        Behavior on color { ColorAnimation { duration: 100 } }
-
-                        Row {
-                            anchors { left: parent.left; leftMargin: 10; verticalCenter: parent.verticalCenter }
-                            spacing: 8
-                            Text {
-                                text:           parent.parent.isActive ? "●" : "○"
-                                font.pixelSize: 9
-                                color: parent.parent.isActive ? Theme.active : Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.30)
-                                anchors.verticalCenter: parent.verticalCenter
-                                Behavior on color { ColorAnimation { duration: 100 } }
-                            }
-                            Text {
-                                text:           modelData
-                                font.pixelSize: 12
-                                color: parent.parent.isActive ? Theme.active : Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.65)
-                                anchors.verticalCenter: parent.verticalCenter
-                                elide: Text.ElideRight
-                                width: pickerCol.width - 38
-                                Behavior on color { ColorAnimation { duration: 100 } }
-                            }
-                        }
-                        HoverHandler { id: itemH; cursorShape: Qt.PointingHandCursor }
-                        TapHandler   { onTapped: root._filterApply(modelData) }
-                    }
-                }
-
-                // Empty state — shown while hyprshade ls is still running
-                Text {
-                    width:   parent.width
-                    visible: root.filterList.length === 0
-                    text:    "Loading…"
-                    font.pixelSize: 11
-                    color:   Qt.rgba(Theme.text.r, Theme.text.g, Theme.text.b, 0.25)
-                    horizontalAlignment: Text.AlignHCenter
-                    topPadding: 4
-                }
-            }
-        }
-    }
-
-    // Tap outside the picker to close it
-    TapHandler {
-        enabled: root.filterPickerOpen
-        onTapped: root.filterPickerOpen = false
     }
 }

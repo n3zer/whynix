@@ -27,7 +27,7 @@ StatCard {
     }
 
     Process {
-        command: ["bash", "-c", "echo ${XDG_CURRENT_DESKTOP:-Hyprland}"]
+        command: ["bash", "-c", "echo ${XDG_CURRENT_DESKTOP:-niri}"]
         running: true
         stdout: SplitParser {
             onRead: function(line) {
