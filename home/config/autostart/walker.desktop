@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Walker Service
-Comment=Walker gapplication service (instant launcher)
-Exec=walker --gapplication-service
-Terminal=false
-X-GNOME-Autostart-enabled=true

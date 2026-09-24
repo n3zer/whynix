@@ -4,28 +4,60 @@ let
   normalUsers = lib.filterAttrs (_: u: u.isNormalUser) config.users.users;
   targetUser = if user != null then user else lib.head (lib.attrNames normalUsers);
   targetHome = config.users.users.${targetUser}.home;
+
+  backendEnv = {
+    PORT = "20129";
+    HOME = targetHome;
+    PATH = lib.concatStringsSep ":" [
+      "${targetHome}/.npm-global/bin"
+      "${targetHome}/.nix-profile/bin"
+      "${pkgs.nodejs}/bin"
+      "${pkgs.bash}/bin"
+      "${pkgs.coreutils}/bin"
+    ];
+  };
+
+  # Реальный AI-роутер. Запускается ТОЛЬКО при первом обращении к :20128,
+  # работает на :20129. Без трафика в RAM не живёт (~700MB в стоке не тратится).
+  backend = pkgs.writeShellScriptBin "omniroute-backend" ''
+    ${lib.concatStringsSep "\n" (lib.mapAttrsToList (k: v: "export ${k}=\"${v}\"") backendEnv)}
+    exec ${pkgs.nodejs}/bin/npx --yes omniroute@latest
+  '';
+
+  # launcher, который socat-фронт зовёт на каждое соединение:
+  # поднимает бэкенд (flock — только один раз) и пробрасывает сокет дальше.
+  lazy = pkgs.writeShellScriptBin "omniroute-lazy" ''
+    probe() { ${pkgs.socat}/bin/socat -T 1 TCP:127.0.0.1:20129 STDIO </dev/null >/dev/null 2>&1; }
+    if probe; then
+      exec ${pkgs.socat}/bin/socat STDIO TCP:127.0.0.1:20129,retry=5,interval=1
+    fi
+    (
+      flock 9
+      if ! probe; then
+        ${pkgs.util-linux}/bin/setsid ${backend} </dev/null >/dev/null 2>&1 &
+        for i in $(seq 1 60); do probe && break; sleep 0.1; done
+      fi
+      exec ${pkgs.socat}/bin/socat STDIO TCP:127.0.0.1:20129,retry=5,interval=1
+    ) 9>/tmp/omniroute.lock
+  '';
 in
 {
   package = pkgs.writeShellScriptBin "omniroute" ''
     exec ${pkgs.nodejs}/bin/npx --yes omniroute@latest "$@"
   '';
 
-  service = {
-    description = "OmniRoute Local AI Router Service";
+  front = {
+    description = "OmniRoute lazy front (20128 → on-demand backend 20129, socat)";
     after = [ "network.target" ];
     wantedBy = [ "multi-user.target" ];
 
-    environment = {
-      PORT = "20128";
-      HOME = targetHome;
-      PATH = lib.mkForce "${targetHome}/.npm-global/bin:${targetHome}/.nix-profile/bin:${pkgs.nodejs}/bin:${pkgs.bash}/bin:${pkgs.coreutils}/bin";
-    };
+    environment = { HOME = targetHome; };
 
     serviceConfig = {
       Type = "simple";
       User = targetUser;
       WorkingDirectory = targetHome;
-      ExecStart = "${pkgs.bash}/bin/bash -lc 'npx --yes omniroute@latest'";
+      ExecStart = "${pkgs.socat}/bin/socat TCP-LISTEN:127.0.0.1:20128,fork,reuseaddr EXEC:${lazy}/bin/omniroute-lazy";
       Restart = "on-failure";
       RestartSec = "5s";
     };

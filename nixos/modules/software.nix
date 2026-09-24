@@ -48,7 +48,7 @@ in
     omniroute.package
   ];
 
-  # omniroute daemon — autostart at boot (systemd service defined in omniroute.nix)
-  systemd.services.omniroute = omniroute.service;
+  # omniroute front — socat proxy; backend (AI router) starts on demand on first connection
+  systemd.services.omniroute = omniroute.front;
 
 }

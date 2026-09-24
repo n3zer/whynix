@@ -9,8 +9,6 @@
     "hyprlock/hyprlock.conf".source = ../config/hyprlock/hyprlock.conf;
     "yazi" = { source = ../config/yazi; };
     "swappy/config".source = ../config/swappy/config;
-    "autostart/elephant.desktop".source = ../config/autostart/elephant.desktop;
-    "autostart/walker.desktop".source = ../config/autostart/walker.desktop;
     "nvim/init.lua".source = ../config/nvim/init.lua;
     "nvim/lua".source = ../config/nvim/lua;
   };

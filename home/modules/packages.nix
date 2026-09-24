@@ -4,8 +4,6 @@
   home.packages = with pkgs; [
     quickshell
     alacritty
-    walker
-    elephant
     wl-clipboard
     wtype # clipboard actions from any keyboard layout (Mod+C/V/X)
     libnotify # notify-send (VPNTab / shell notifications)

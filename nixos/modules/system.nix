@@ -34,6 +34,7 @@
   # ssh
   services.openssh = {
     enable = true;
+    startWhenNeeded = true; # поднимать sshd только по подключению (меньше демонов в стоке)
     settings = {
       PasswordAuthentication = true;
       PermitRootLogin = "yes";
