@@ -1,7 +1,7 @@
 # Installing NixOS with dotfiles
 
 A guide from disk partitioning to a full desktop (niri + quickshell).
-Target config: **`nixos-vm`**, user **`n3z`**.
+Target config: **`n3zer`**, user **`n3z`**.
 
 > Config: EFI, ext4 root, no swap, no encryption.
 > Bootloader: **limine** (set automatically from the config).
@@ -106,7 +106,7 @@ reboot
 ```
 
 > Replace `#nixos` with the flake output name matching your machine
-> (the checked-in flake defines `nixosConfigurations.nixos-vm`).
+> (the checked-in flake defines `nixosConfigurations.n3zer`).
 
 ---
 

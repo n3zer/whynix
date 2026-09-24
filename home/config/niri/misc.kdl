@@ -1,6 +1,7 @@
 //---------------------- startup ----------------------\\
 spawn-at-startup "quickshell"
 spawn-at-startup "bash" "-c" "(awww-daemon &) ; until wallpaper-cycle restore; do sleep 0.2; done"
+spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store"
 
 
 //---------------------- misc configuration ----------------------\\

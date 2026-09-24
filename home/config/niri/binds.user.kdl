@@ -24,8 +24,8 @@ binds {
     XF86AudioMute         allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }       // Mute or unmute the audio (media key)
 
     // ---- windows and columns ----
-    Mod+U                { close-window; }                 // Close the focused window
-    Mod+V                { toggle-window-floating; }       // Float or unfloat the focused window
+    Mod+Q                { close-window; }                 // Close the focused window
+    Mod+Ctrl+F           { toggle-window-floating; }       // Float or unfloat the focused window
     Mod+F                { maximize-column; }              // Maximize the focused column
     Mod+Shift+F          { fullscreen-window; }            // Make the focused window fullscreen
     Mod+Left             { focus-column-left; }            // Focus the column to the left
@@ -79,6 +79,25 @@ binds {
     Print                { screenshot-screen; }            // Take a screenshot of the whole screen
     Shift+Print          { screenshot; }                   // Take a screenshot of a selected area
     Ctrl+Print           { screenshot-window; }            // Take a screenshot of the focused window
+
+    // ---- quickshell menus (opened via IPC) ----
+    Mod+M                { spawn-sh "quickshell ipc call dashboard-home toggle"; }       // Home dashboard
+    Mod+S                { spawn-sh "quickshell ipc call dashboard-stats toggle"; }      // Stats dashboard
+    Mod+K                { spawn-sh "quickshell ipc call dashboard-kanban toggle"; }     // Kanban dashboard
+    Mod+Shift+C          { spawn-sh "quickshell ipc call dashboard-config toggle"; }     // Config (Keybinds etc.)
+    Mod+O                { spawn-sh "quickshell ipc call audioOut-toggle toggle"; }      // Audio output
+    Mod+I                { spawn-sh "quickshell ipc call audioIn-toggle toggle"; }       // Audio input
+    Mod+Shift+M          { spawn-sh "quickshell ipc call audioMix-toggle toggle"; }      // Audio mixer
+    Mod+E                { spawn-sh "quickshell ipc call wifi-toggle toggle"; }          // Wi-Fi
+    Mod+B                { spawn-sh "quickshell ipc call bluetooth-toggle toggle"; }     // Bluetooth
+    Mod+Y                { spawn-sh "quickshell ipc call vpn-toggle toggle"; }           // VPN
+    Mod+H                { spawn-sh "quickshell ipc call hotspot-toggle toggle"; }       // Hotspot
+    Mod+N                { spawn-sh "quickshell ipc call notification-toggle toggle"; }  // Notifications
+    Mod+V                { spawn-sh "quickshell ipc call clipboard-toggle toggle"; }     // Clipboard history
+    Mod+Shift+W          { spawn-sh "quickshell ipc call wallpaper-toggle toggle"; }     // Wallpaper picker
+    Mod+P                { spawn-sh "quickshell ipc call PowerMenu-toggle toggle"; }     // Power menu
+    Mod+Z                { spawn-sh "quickshell ipc call screenrec-on toggle"; }         // Screen record
+    Mod+Shift+S          { spawn-sh "quickshell ipc call focus-toggle toggle"; }         // Focus mode
 
     // NOTE: bare Escape is intentionally NOT bound — niri would consume it
     // globally and apps would never receive it. Quickshell popups close on
