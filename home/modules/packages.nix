@@ -45,6 +45,11 @@
     (pkgs.writeShellScriptBin "screenshot-edit" ''
       exec ${pkgs.grim}/bin/grim -g "$(${pkgs.slurp}/bin/slurp)" - | ${pkgs.swappy}/bin/swappy -f -
     '') # region → swappy editor
+    # polkit_gnome кладёт бинарь только в libexec (не на PATH) — даём wrapper,
+    # чтобы spawn-at-startup "polkit-gnome-authentication-agent-1" находил его.
+    (pkgs.writeShellScriptBin "polkit-gnome-authentication-agent-1" ''
+      exec ${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1
+    '')
     hyprpicker # пипетка цвета (тематизация от любого пикселя)
     tesseract # OCR из скриншотов (eng в комплекте)
 

@@ -1,11 +1,11 @@
 //---------------------- startup ----------------------\\
 spawn-at-startup "quickshell"
-spawn-at-startup "bash" "-c" "(awww-daemon &) ; until wallpaper-cycle restore; do sleep 0.2; done"
-spawn-at-startup "bash" "-c" "wl-paste --watch cliphist store"
+spawn-at-startup "bash" "-c" "awww-daemon & until wallpaper-cycle restore; do sleep 0.2; done"
+spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
 spawn-at-startup "swayosd-server" // volume/brightness OSD overlay
 spawn-at-startup "polkit-gnome-authentication-agent-1" // GUI auth prompts (sudo from DE)
 // idle: 5 min → screen off, 10 min → lock, 10:15 → suspend (niri 26.x: только power-off-monitors)
-spawn-at-startup "bash" "-c" "exec swayidle -w timeout 300 'niri msg action power-off-monitors' timeout 600 'hyprlock' timeout 615 'systemctl suspend' before-sleep 'hyprlock' after-resume 'niri msg action power-on-monitors'"
+spawn-at-startup "swayidle" "-w" "timeout" "300" "niri msg action power-off-monitors" "timeout" "600" "hyprlock" "timeout" "615" "systemctl suspend" "before-sleep" "hyprlock" "after-resume" "niri msg action power-on-monitors"
 
 
 //---------------------- cursor ----------------------\\

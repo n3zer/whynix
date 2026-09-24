@@ -18,9 +18,8 @@
   };
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # vm
+  # vm (enable задан в hardware-configuration.nix — здесь только доп. опции)
   virtualisation.virtualbox.guest = {
-    enable = true;
     dragAndDrop = true;
   };
 

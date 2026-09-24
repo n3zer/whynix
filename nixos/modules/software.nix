@@ -41,7 +41,6 @@ in
     wget
     curl
     firefox
-    catppuccin-sddm
     nodejs
     swayosd
     opencode

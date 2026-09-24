@@ -9,6 +9,18 @@ window-rule {
     default-column-width { proportion 1.0; }
 }
 
+// Picture-in-Picture: float on top of tiled windows, sized like a video,
+// pinned to the main screen (corner, below the bar).
+window-rule {
+    match title=r#"^(Picture.?in.?Picture|img-pip-view)$"#
+
+    open-floating true
+    default-column-width { fixed 426; }
+    default-window-height { fixed 240; }
+    default-floating-position x=16 y=16 relative-to="top-right"
+    open-on-output "Virtual-1"
+}
+
 // Runtime overrides (seat from WallpaperService UpdateBorders):
 // optional so a missing file (fresh profile, before any wallpaper apply)
 // never breaks parsing.

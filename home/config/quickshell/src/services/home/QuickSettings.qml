@@ -91,12 +91,12 @@ StatCard {
 
     Process { id: btPowerRead
         command: ["bash", "-c",
-            "bluetoothctl show 2>/dev/null | grep '^\\s*Powered:' | awk '{print $2}'"]
+            "bluetoothctl --timeout 3 show 2>/dev/null | grep '^\\s*Powered:' | awk '{print $2}'"]
         running: false
         stdout: SplitParser { onRead: function(l) { root.btOn = l.trim() === "yes" } } }
     Process { id: btDeviceRead
         command: ["bash", "-c",
-            "bluetoothctl devices Connected 2>/dev/null | head -1 | cut -d' ' -f3-"]
+            "bluetoothctl --timeout 3 devices Connected 2>/dev/null | head -1 | cut -d' ' -f3-"]
         running: false
         stdout: SplitParser { onRead: function(l) { root.btDevice = l.trim() } } }
     Process { id: btToggleProc; command: []; running: false

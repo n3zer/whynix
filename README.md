@@ -44,15 +44,13 @@ home/
 |---|---|
 | `quickshell` | The desktop shell: top bar, dashboards, popups, system services |
 | `niri` (system) | Scrollable-tiling Wayland compositor (window manager) |
-| `walker` | Application launcher (part of the shell) |
-| `elephant` | File/command launcher (part of the shell) |
 | `alacritty` | GPU-accelerated terminal emulator (default `$TERMINAL`) |
 | `swayosd` | On-screen display for volume/brightness changes (spawned at startup) |
 | `hyprlock` | Screen locker; shown by the power menu, `Mod+L`, and on idle/sleep |
 | `kando` | Radial "pie" menu for quick actions (`Mod+Space`) |
 | `fastfetch` | System info printed on shell start |
 | `cava` | Audio visualizer fed to the shell's visualizer bars |
-| `wal_cycle` tool | `wallpaper-cycle` — cycles/restores wallpapers (`Mod+W`) |
+| `wallpaper-cycle` | Built-in wrapper over `config/scripts/wallpaper-cycle.sh` — cycles/restores wallpapers (`Mod+W`) |
 
 ### Input / clipboard / wayland helpers
 
@@ -226,3 +224,16 @@ nixos-rebuild switch --flake .#n3zer
 - Home Manager is applied as part of `nixos-rebuild`; no separate command.
 - `niri validate` checks the compositor config (`~/.config/niri/config.kdl`).
 - Nix store is auto-optimised and garbage-collected (older than 14 days) nightly.
+
+### OmniRoute (`:20128` lazy front → `:20129` backend)
+
+The backend binary is **not** fetched via npx at runtime. Install it once into the
+user npm prefix (already done on this machine), matching the service's `PATH`:
+
+```bash
+npm install --global omniroute --prefix ~/.npm-global
+```
+
+`omniroute.service` (socat front on `:20128`) lazily spawns the backend on the
+first connection and forwards to `:20129`. Check: `systemctl status omniroute`
+then `curl 127.0.0.1:20128`.

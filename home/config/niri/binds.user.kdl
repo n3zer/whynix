@@ -5,12 +5,11 @@ binds {
     // ---- applications ----
     Mod+T           { spawn "alacritty"; }            // Open a terminal
     Mod+A                { spawn-sh "quickshell ipc call dashboard-launcher toggle"; }     // Open the Apps page in the bar
-    Mod+W                { spawn "wallpaper-cycle"; }       // Cycle the wallpaper
+    Mod+E                { spawn "thunar"; }          // File manager
 
     // ---- clipboard (work from any keyboard layout) ----
     // wtype injects a latin Ctrl+C/V/X keysym, so copy/paste/cut work even
     // when the Cyrillic layout is active (app-level Ctrl+* would send "с/м/ч").
-    Mod+C                { spawn "wtype" "-M" "ctrl" "-k" "c"; }     // Copy
     Mod+Shift+V          { spawn "wtype" "-M" "ctrl" "-k" "v"; }     // Paste
     Mod+X                { spawn "wtype" "-M" "ctrl" "-k" "x"; }     // Cut
 
@@ -80,11 +79,7 @@ binds {
     Shift+Print          { screenshot; }                   // Take a screenshot of a selected area
     Ctrl+Print           { screenshot-window; }            // Take a screenshot of the focused window
     Mod+Shift+Print      { spawn "screenshot-edit"; }      // Region → swappy editor
-
-    // ---- lock ----
     Mod+L                { spawn "hyprlock"; }             // Lock the screen
-
-    // ---- kando pie menu ----
     Mod+Space            { spawn "kando"; }                // Pie menu (apps, actions)
 
     // ---- quickshell menus (opened via IPC) ----
@@ -95,13 +90,13 @@ binds {
     Mod+O                { spawn-sh "quickshell ipc call audioOut-toggle toggle"; }      // Audio output
     Mod+I                { spawn-sh "quickshell ipc call audioIn-toggle toggle"; }       // Audio input
     Mod+Shift+M          { spawn-sh "quickshell ipc call audioMix-toggle toggle"; }      // Audio mixer
-    Mod+E                { spawn-sh "quickshell ipc call wifi-toggle toggle"; }          // Wi-Fi
     Mod+B                { spawn-sh "quickshell ipc call bluetooth-toggle toggle"; }     // Bluetooth
     Mod+Y                { spawn-sh "quickshell ipc call vpn-toggle toggle"; }           // VPN
     Mod+H                { spawn-sh "quickshell ipc call hotspot-toggle toggle"; }       // Hotspot
     Mod+N                { spawn-sh "quickshell ipc call notification-toggle toggle"; }  // Notifications
     Mod+V                { spawn-sh "quickshell ipc call clipboard-toggle toggle"; }     // Clipboard history
-    Mod+Shift+W          { spawn-sh "quickshell ipc call wallpaper-toggle toggle"; }     // Wallpaper picker
+    Mod+Shift+E          { spawn-sh "quickshell ipc call wifi-toggle toggle"; }          // Wi-Fi
+    Mod+W          { spawn-sh "quickshell ipc call wallpaper-toggle toggle"; }     // Wallpaper picker
     Mod+P                { spawn-sh "quickshell ipc call PowerMenu-toggle toggle"; }     // Power menu
     Mod+Z                { spawn-sh "quickshell ipc call screenrec-on toggle"; }         // Screen record
     Mod+Shift+S          { spawn-sh "quickshell ipc call focus-toggle toggle"; }         // Focus mode

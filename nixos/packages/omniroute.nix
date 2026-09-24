@@ -5,6 +5,10 @@ let
   targetUser = if user != null then user else lib.head (lib.attrNames normalUsers);
   targetHome = config.users.users.${targetUser}.home;
 
+  # omniroute установлен локально (npm --prefix ~/.npm-global, см. README):
+  # без npx/скачиваний при каждом запуске. PATH ниже указывает на него.
+  omnirouteBin = "${targetHome}/.npm-global/bin/omniroute";
+
   backendEnv = {
     PORT = "20129";
     HOME = targetHome;
@@ -21,7 +25,11 @@ let
   # работает на :20129. Без трафика в RAM не живёт (~700MB в стоке не тратится).
   backend = pkgs.writeShellScriptBin "omniroute-backend" ''
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList (k: v: "export ${k}=\"${v}\"") backendEnv)}
-    exec ${pkgs.nodejs}/bin/npx --yes omniroute@latest
+    if [ ! -x "${omnirouteBin}" ]; then
+      echo "omniroute-backend: ${omnirouteBin} не найден — выполните: npm install --global omniroute --prefix \$HOME/.npm-global" >&2
+      exit 1
+    fi
+    exec "${omnirouteBin}"
   '';
 
   # launcher, который socat-фронт зовёт на каждое соединение:
@@ -43,7 +51,11 @@ let
 in
 {
   package = pkgs.writeShellScriptBin "omniroute" ''
-    exec ${pkgs.nodejs}/bin/npx --yes omniroute@latest "$@"
+    if [ ! -x "${omnirouteBin}" ]; then
+      echo "omniroute: ${omnirouteBin} не найден — выполните: npm install --global omniroute --prefix \$HOME/.npm-global" >&2
+      exit 1
+    fi
+    exec "${omnirouteBin}" "$@"
   '';
 
   front = {
@@ -57,7 +69,7 @@ in
       Type = "simple";
       User = targetUser;
       WorkingDirectory = targetHome;
-      ExecStart = "${pkgs.socat}/bin/socat TCP-LISTEN:127.0.0.1:20128,fork,reuseaddr EXEC:${lazy}/bin/omniroute-lazy";
+      ExecStart = "${pkgs.socat}/bin/socat TCP-LISTEN:20128,fork,reuseaddr,bind=127.0.0.1 EXEC:${lazy}/bin/omniroute-lazy";
       Restart = "on-failure";
       RestartSec = "5s";
     };

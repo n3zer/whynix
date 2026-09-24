@@ -10,9 +10,10 @@
   networking.hostName = "nixos-vm";
 
   # gnome-keyring — хранение паролей (Telegram/Discord/браузер), разблокируется
-  # автоматически при входе через SDDM.
+  # автоматически при входе. greetd подключает PAM-стек `login`
+  # (auth substack / session include), поэтому keyring вешаем на login.
   services.gnome.gnome-keyring.enable = true;
-  security.pam.services.sddm.enableGnomeKeyring = true;
+  security.pam.services.login.enableGnomeKeyring = true;
 
   # gvfs — монтирование USB/сетевых шаров/киоск-панели для thunar и xdg-open
   services.gvfs.enable = true;
@@ -24,8 +25,7 @@
   services.fwupd.enable = true;
 
   # автообслуживание nix-стора
-  nix.optimise.automatic = true;
-  nix.settings.auto-optimise-store = true;
+  nix.optimise.automatic = true; # weekly nix-store --optimise (хватает; auto-optimise избыточен)
   nix.gc = {
     automatic = true;
     options = "--delete-older-than 14d";

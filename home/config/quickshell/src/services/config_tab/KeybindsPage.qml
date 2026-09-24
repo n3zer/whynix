@@ -89,6 +89,23 @@ FocusScope {
         )
     }
 
+    // Shown when the ✕ (unbind) is clicked — confirm before applying.
+    function _confirmUnbind(combo) {
+        var b = KeybindService._niriById[combo]
+        var label = b ? (b.comment || b.label || b.action || "") : ""
+        Popups.showConfirm(
+            "Unbind keybind",
+            "Remove <b>" + combo + "</b>" +
+            (label ? "<br>· <i>" + label + "</i>" : "") + "?",
+            "Unbind",
+            "custom",
+            "",
+            function() {
+                root._applyOps([{ combo: combo, unbind: true }])
+            }
+        )
+    }
+
     property Process _niriReloadProc: Process { command: []; running: false }
 
     // Give niri a moment before re-listing the binds.
@@ -247,7 +264,7 @@ FocusScope {
                     width: _col.width
                     onRebindRequested:  root._applyOps([{ combo: combo, mods: mods, key: key }])
                     onConfirmRequested: root._confirmRebind(combo, mods, key)
-                    onUnbindRequested: root._applyOps([{ combo: combo, unbind: true }])
+                    onUnbindRequested: root._confirmUnbind(combo)
                 }
                 onCountChanged: _noMatches.visible = _list.count === 0 && root._query.trim() !== ""
             }

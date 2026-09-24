@@ -80,13 +80,13 @@ Item {
         command: [
             "bash", "-c",
             "echo 'POWERED:'; " +
-            "bluetoothctl show 2>/dev/null | awk '/Powered:/{print $2}'; " +
+            "bluetoothctl --timeout 3 show 2>/dev/null | awk '/Powered:/{print $2}'; " +
             "echo 'PAIRED:'; " +
-            "bluetoothctl devices Paired    2>/dev/null | awk '{print $2}'; " +
+            "bluetoothctl --timeout 3 devices Paired    2>/dev/null | awk '{print $2}'; " +
             "echo 'CONNECTED:'; " +
-            "bluetoothctl devices Connected 2>/dev/null | awk '{print $2}'; " +
+            "bluetoothctl --timeout 3 devices Connected 2>/dev/null | awk '{print $2}'; " +
             "echo 'ALL:'; " +
-            "bluetoothctl devices           2>/dev/null"
+            "bluetoothctl --timeout 3 devices           2>/dev/null"
         ]
         running: false
         stdout: StdioCollector { onStreamFinished: root._parseDevices(text) }
