@@ -18,15 +18,26 @@ in
     nerd-fonts.iosevka
     nerd-fonts.daddy-time-mono
     material-icons
+    material-symbols
+    font-awesome
     geist-font
+    noto-fonts-color-emoji # эмодзи (не тофу в TG/Discord)
+    noto-fonts-cjk-sans # китайский/японский/корейский
   ];
+
+  # xdg portal — point it at niri so GTK/Electron apps (file pickers, etc.)
+  # work; gnome implementation handles FileChooser/Screenshot.
+  xdg.portal = {
+    enable = true;
+    config.common.default = "gnome";
+    extraPortals = [ pkgs.xdg-desktop-portal-gnome ];
+  };
 
   # packages
   environment.systemPackages = with pkgs; [
     xwayland
     xwayland-satellite
-    xdg-desktop-portal-gnome
-    polkit_gnome
+    polkit_gnome # polkit-gnome-authentication-agent-1 (spawned by niri)
     wget
     curl
     firefox

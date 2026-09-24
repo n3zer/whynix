@@ -27,7 +27,7 @@ QtObject {
     property string previewWall:  ""
     property string scheme:       "content"
     property bool   applying:     false
-    property string wallpaperDir: "~/Pictures/Wallpapers"
+    property string wallpaperDir: "/home/n3z/dotfiles/home/config/wallpapers"
 
     readonly property var schemes: [
         "content", "tonal-spot", "fidelity", "fruit-salad", "neutral", "monochrome"

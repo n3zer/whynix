@@ -13,7 +13,7 @@ import "../services/"
 //   "shutdown"        → systemctl poweroff
 //   "reboot"          → systemctl reboot
 //   "logout"          → niri msg action quit
-//   "lock"            → loginctl lock-session
+//   "lock"            → hyprlock (niri has no native lock block)
 //   "suspend"         → systemctl suspend
 //   "gpu-switch-envy" → pkexec scripts/GfxSwitch.sh <mode>, then systemctl reboot
 //                       GfxSwitch.sh prints "authenticated" after pkexec auth succeeds,
@@ -87,7 +87,7 @@ PanelWindow {
                 break
             case "lock":
                 Popups.cancelConfirm()
-                proc.pendingCmd = ["loginctl", "lock-session"]
+                proc.pendingCmd = ["hyprlock"]
                 proc.running = true
                 break
             case "suspend":

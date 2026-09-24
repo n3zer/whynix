@@ -7,6 +7,7 @@
       ./modules/shell.nix
       ./modules/git.nix
       ./modules/config.nix
+      ./modules/theming.nix
     ];
 
   #user info

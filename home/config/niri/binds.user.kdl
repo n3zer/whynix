@@ -79,6 +79,13 @@ binds {
     Print                { screenshot-screen; }            // Take a screenshot of the whole screen
     Shift+Print          { screenshot; }                   // Take a screenshot of a selected area
     Ctrl+Print           { screenshot-window; }            // Take a screenshot of the focused window
+    Mod+Shift+Print      { spawn "screenshot-edit"; }      // Region → swappy editor
+
+    // ---- lock ----
+    Mod+L                { spawn "hyprlock"; }             // Lock the screen
+
+    // ---- kando pie menu ----
+    Mod+Space            { spawn "kando"; }                // Pie menu (apps, actions)
 
     // ---- quickshell menus (opened via IPC) ----
     Mod+M                { spawn-sh "quickshell ipc call dashboard-home toggle"; }       // Home dashboard

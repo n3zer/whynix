@@ -6,6 +6,9 @@
     "niri" = { source = ../config/niri; force = true; };
     "quickshell" = { source = ../config/quickshell; force = true; };
     "alacritty/alacritty.toml".source = ../config/alacritty/alacritty.toml;
+    "hyprlock/hyprlock.conf".source = ../config/hyprlock/hyprlock.conf;
+    "yazi" = { source = ../config/yazi; };
+    "swappy/config".source = ../config/swappy/config;
     "autostart/elephant.desktop".source = ../config/autostart/elephant.desktop;
     "autostart/walker.desktop".source = ../config/autostart/walker.desktop;
     "nvim/init.lua".source = ../config/nvim/init.lua;

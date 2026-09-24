@@ -66,7 +66,7 @@ Column {
 
     function runDirect(action) {
         switch (action) {
-            case "lock":    runner.pendingCmd = ["loginctl", "lock-session"];    break
+            case "lock":    runner.pendingCmd = ["hyprlock"];    break
             case "suspend": runner.pendingCmd = ["systemctl", "suspend"];        break
         }
         runner.running = true
