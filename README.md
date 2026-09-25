@@ -69,7 +69,7 @@ home/
 | `firefox` | Default browser |
 | `thunar` | Graphics file manager (GUI) |
 | `yazi` | Terminal file manager with thumbnails/previews |
-| `telegram-desktop` | Telegram messenger |
+| `ayugram-desktop` | AyuGram Desktop messenger |
 | `discord` | Discord messenger |
 | `spotify` | Music streaming |
 | `mpv` + `yt-dlp` | Video/media player with YouTube support |

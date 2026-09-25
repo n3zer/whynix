@@ -32,7 +32,10 @@
     xdg-utils # xdg-open / mime opening из yazi и других приложений
 
     # chat / messaging
-    telegram-desktop
+    ayugram-desktop
+    (pkgs.writeShellScriptBin "ayugram-desktop" ''
+      exec ${pkgs.ayugram-desktop}/bin/AyuGram "$@"
+    '')
     discord
 
     # media / вьюверы

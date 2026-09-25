@@ -5,6 +5,18 @@
   xdg.configFile = {
     "niri" = { source = ../config/niri; force = true; };
     "quickshell" = { source = ../config/quickshell; force = true; };
+    "mimeapps.list" = {
+      text = ''
+        [Default Applications]
+        x-scheme-handler/tg=com.ayugram.desktop.desktop
+        x-scheme-handler/tonsite=com.ayugram.desktop.desktop
+
+        [Added Associations]
+        x-scheme-handler/tg=com.ayugram.desktop.desktop;
+        x-scheme-handler/tonsite=com.ayugram.desktop.desktop;
+      '';
+      force = true;
+    };
     "alacritty/alacritty.toml".source = ../config/alacritty/alacritty.toml;
     "hyprlock/hyprlock.conf".source = ../config/hyprlock/hyprlock.conf;
     "yazi" = { source = ../config/yazi; };
