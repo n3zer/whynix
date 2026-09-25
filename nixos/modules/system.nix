@@ -41,6 +41,8 @@
     };
   };
 
+  environment.shells = [ pkgs.fish ];
+
   # user
   users.users.n3z = {
     isNormalUser = true;

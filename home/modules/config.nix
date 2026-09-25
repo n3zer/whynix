@@ -46,6 +46,7 @@ EOF
 
   #environment variables
   home.sessionVariables = {
+    BROWSER = "firefox";
     EDITOR = "nvim";
     TERMINAL = "alacritty";
   };

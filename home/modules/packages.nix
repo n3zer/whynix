@@ -13,6 +13,9 @@
     python3 # list_apps.py / ScreenRecService pickers
     awww # бывший swww (Rust-перезапись)
     (pkgs.writeShellScriptBin "wallpaper-cycle" (builtins.readFile ../config/scripts/wallpaper-cycle.sh)) # cycle wallpaper (Mod+W)
+    (pkgs.writeShellScriptBin "open-browser" ''
+      exec ${config.home.sessionVariables.BROWSER} "$@"
+    '')
     fastfetch
     cava # audio visualizer bars (quickshell CavaService)
     matugen # wallpaper→theme color generator (WallpaperService re-themes on set)

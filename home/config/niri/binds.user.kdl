@@ -4,6 +4,7 @@ binds {
 
     // ---- applications ----
     Mod+T           { spawn "alacritty"; }            // Open a terminal
+    Mod+Return         { spawn "open-browser"; }
     Mod+A                { spawn-sh "quickshell ipc call dashboard-launcher toggle"; }     // Open the Apps page in the bar
     Mod+E                { spawn "thunar"; }          // File manager
 
