@@ -1,23 +1,27 @@
 { pkgs, ... }:
 
 {
-  services.greetd = {
-    enable = true;
-    useTextGreeter = true;
+  services.greetd.enable = false;
+  services.displayManager.regreet.enable = false;
 
+  services.displayManager.sddm = {
+    enable = true;
+    wayland.enable = true;
+    theme = "sddm-astronaut-theme";
+    extraPackages = [ pkgs.qt6.qtmultimedia ];
     settings = {
-      default_session = {
-        command = "${pkgs.tuigreet}/bin/tuigreet --time --remember --user n3z --cmd ${pkgs.niri}/bin/niri-session";
-        user = "greeter";
+      Theme = {
+        CursorTheme = "Adwaita";
       };
     };
   };
 
-  services.displayManager.regreet.enable = false;
+  environment.systemPackages = with pkgs; [
+    sddm-astronaut
+    qt6.qtmultimedia
+  ];
 
-  # greeter: прямой доступ к DRM/вводу в VM (libseat/DRM backend)
-  users.users.greeter.extraGroups = [ "video" "input" ];
+  services.accounts-daemon.enable = true;
 
-  # compositor
   programs.niri.enable = true;
 }
