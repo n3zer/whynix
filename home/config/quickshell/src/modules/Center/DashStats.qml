@@ -15,9 +15,8 @@ Item {
     EnvyControlService { id: envy }
     CpuFreqService     { id: cpuFreq }
     GpuService {
-        id:       gpu
-        active:   root.visible
-        envyMode: envy.currentMode
+        id:     gpu
+        active: root.visible
     }
 
     Column {

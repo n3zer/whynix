@@ -1,5 +1,23 @@
 //---------------------- startup ----------------------\\
-spawn-at-startup "quickshell"
+// Quickshell всегда стартует на dGPU через Vulkan.
+// Композитор при этом продолжает рендериться на Intel UHD 630 — offload
+// затрагивает только клиентский процесс bar'а, а не весь сеанс.
+//
+//   QSG_RHI_BACKEND=vulkan           Qt Quick использует RHI->Vulkan вместо GL
+//   QSG_RENDER_LOOP=threaded         рендер-цикл в отдельном потоке
+//   VK_LOADER_DRIVERS_SELECT=*nvidia*  загрузчик Vulkan грузит ТОЛЬКО NVIDIA ICD
+//
+// Про VK_LOADER_DRIVERS_SELECT: без него на этой машине перечисление Vulkan
+// идёт как Intel UHD 630 -> NVIDIA -> llvmpipe, то есть device[0] = Intel, и
+// Qt выбрал бы встроенную карту. Фильтр по имени драйвера оставляет один
+// единственный ICD, поэтому device[0] становится GTX 1060 независимо от
+// прочих переменных.
+//
+// Известный риск threaded на проприетарном драйвере NVIDIA: цикл рендера в
+// отдельном потоке на 580.x иногда даёт артефакты или подвисания при
+// ресайзе/смене мониторов. Если столкнёмся — откат на QSG_RENDER_LOOP=basic
+// одной правкой здесь же.
+spawn-at-startup "env" "QSG_RHI_BACKEND=vulkan" "QSG_RENDER_LOOP=threaded" "VK_LOADER_DRIVERS_SELECT=*nvidia*" "quickshell"
 spawn-at-startup "bash" "-c" "awww-daemon & until wallpaper-cycle restore; do sleep 0.2; done"
 spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
 spawn-at-startup "swayosd-server" // volume/brightness OSD overlay

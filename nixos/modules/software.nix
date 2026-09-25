@@ -45,6 +45,17 @@ in
     swayosd
     opencode
     omniroute.package
+    # диагностика GPU/PCI: lspci для проверки драйверов и -kn (на чём
+    # сидит HDA-контроллер), alsa-utils для карт/миксера, glxinfo +
+    # vulkaninfo для проверки рендера, libva-utils для vainfo
+    pciutils
+    alsa-utils
+    mesa-demos # даёт glxinfo
+    vulkan-tools # даёт vulkaninfo
+    # vainfo: без него не проверить, что iHD реально открылся и какие
+    # профили декодирования доступны. Проверено — отдаёт
+    # "Intel iHD driver ... 26.2.4" и VAEntrypointVLD для H264/HEVC/VP9.
+    libva-utils
   ];
 
   # omniroute: socket 20128 -> systemd-socket-proxyd -> backend 20129 on demand

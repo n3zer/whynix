@@ -2,14 +2,16 @@ import QtQuick
 import Quickshell.Io
 
 // Intel iGPU: frequency % via cat of sysfs rps files.
-// NVIDIA dGPU: nvidia-smi when envycontrol mode is not "integrated".
+// NVIDIA dGPU: nvidia-smi. This machine uses PRIME render offload rather
+// than a GPU mode switch, so the card sleeps when idle and wakes under
+// load. dgpu.active therefore follows whether nvidia-smi answers at all.
 //
 // Exposes:
 //   igpu.freqPercent  — 0–100 (act_freq / max_freq * 100)
 //   igpu.curMhz       — e.g. "650 MHz"
 //   igpu.maxMhz       — e.g. "1100 MHz"
 //
-//   dgpu.active       — false when envycontrol is "integrated"
+//   dgpu.active       — true once nvidia-smi returns a reading
 //   dgpu.usagePercent — 0–100
 //   dgpu.usedVram     — e.g. "2048 MB"
 //   dgpu.totalVram    — e.g. "4096 MB"
@@ -18,7 +20,6 @@ QtObject {
     id: root
 
     property bool   active:   true
-    property string envyMode: "integrated"
 
     property QtObject igpu: QtObject {
         property real   freqPercent: 0.0
@@ -142,7 +143,7 @@ QtObject {
 
     property var _nvTimer: Timer {
         interval: 1000
-        running:  root.active && root._nvidiaAvailable && root.envyMode !== "integrated"
+        running:  root.active && root._nvidiaAvailable
         repeat:   true
         onTriggered: {
             _nvProc.running = false
@@ -155,16 +156,6 @@ QtObject {
             _discoverProc.running = true
         if (active && !_nvidiaAvailable)
             _nvidiaDetectProc.running = true
-    }
-
-    // ── dGPU active state follows envyMode ────────────────────────────────────
-    onEnvyModeChanged: {
-        if (envyMode === "integrated") {
-            dgpu.active       = false
-            dgpu.usagePercent = 0
-            dgpu.usedVram     = "— MB"
-            dgpu.totalVram    = "— MB"
-        }
     }
 
     Component.onCompleted: {

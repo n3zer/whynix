@@ -66,13 +66,36 @@
     gnumake
     pkg-config
 
+    # rust: компилятор + утилиты, всё из nixpkgs (rustup сюда нельзя —
+    # он тянет proxies bin/rustc и bin/cargo и ломает nix-тулчейн)
+    rustc
+    cargo
+    clippy
+    rustfmt
+    rust-analyzer
+    sccache # кэш компиляции
+    cargo-edit # cargo add/rm/upgrade/install
+    cargo-watch # cargo watch -x run
+    bacon # фоновый cargo check с TUI
+    cargo-expand # раскрыть макросы
+    cargo-nextest # быстрые тесты
+    cargo-llvm-cov # покрытие кода
+    cargo-machete # неиспользуемые зависимости
+    fd
+    ripgrep
+    hyperfine # бенчмарки
+    just # task-раннер
+    cmake zlib libgit2 protobuf # библиотеки для -sys crate'ов (prost/git2/...)
+    gdb strace valgrind # отладка
+    trunk wasm-pack # сборка wasm
+
     # idle / suspend (spawned by niri; locks + powers off monitors via swayidle)
     swayidle
     kando # круговое меню (Mod+Space)
 
     # LSP servers (nvim-lspconfig)
     pyright # python
-    rust-analyzer # rust
+    rust-analyzer # rust (см. блок rust выше)
     gopls # go
     csharp-ls # c#
     typescript-language-server # js/ts
@@ -86,4 +109,12 @@
 
     github-cli # gh: push, branches, PRs via GitHub
   ];
+
+  # Antigravity — IDE от Google (форк VS Code). Через home-manager-модуль,
+  # а не просто пакетом: он даёт .desktop для меню приложений.
+  # package указан явно: в nixpkgs атрибут переименован в antigravity-ide.
+  programs.antigravity = {
+    enable = true;
+    package = pkgs.antigravity-ide;
+  };
 }
