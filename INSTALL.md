@@ -8,12 +8,34 @@ Target config: **`n3zer`**, user **`n3z`**.
 
 ---
 
+## Flake targets
+
+| Target | Purpose | VirtualBox |
+|---|---|---|
+| `.#n3zer` | **bare metal — use this on the laptop** | off |
+| `.#n3zer-vm` | VirtualBox guest (this machine) | on |
+
+Both share the same modules and Home Manager config. The only differences are
+`nixos/profiles/laptop.nix` (hostname, auto-cpufreq, lid handling) and
+`nixos/profiles/virtualbox-guest.nix` (guest additions + VBoxClient services).
+
+Each target has its **own** hardware description:
+
+- `nixos/hardware-configuration.nix` — bare metal. **Regenerate it on the
+  target machine** (step 4); the committed copy points at a different disk.
+- `nixos/hardware-configuration-vm.nix` — the VM's virtual disk. Leave it alone.
+
+---
+
 ## 0. Preparation
 
 1. Download the [NixOS ISO](https://nixos.org/download) (minimal is enough).
 2. Boot from the ISO; log in as `nixos` (no password) or `root`.
 
 Network: `sudo systemctl start NetworkManager` (or `ip link` + `dhcpcd`), check with `ping -c1 nixos.org`.
+
+> Before installing on a laptop, **disable Secure Boot** in the firmware.
+> limine does not chain-load through it.
 
 ---
 
@@ -76,27 +98,34 @@ cd nixos-config
 
 ## 4. Generating hardware-configuration.nix
 
-The checked-in `hardware-configuration.nix` targets a different machine —
+The checked-in `nixos/hardware-configuration.nix` targets a different machine —
 **disk UUIDs won't match**. Regenerate for the current layout:
 
 ```bash
-nixos-generate-config --root /mnt --show-hardware-config > nixos/hardware-configuration.nix
+cd /mnt/etc/nixos-config
+nixos-generate-config --root /mnt > nixos/hardware-configuration.nix
+git add nixos/hardware-configuration.nix
 ```
 
 Inspect the file: `fileSystems."/"` and `fileSystems."/boot"` must contain the
 UUIDs of your freshly formatted partitions.
+
+> The `git add` is **required** — the flake is built from the git index, so an
+> untracked file never reaches the Nix store and the build fails with
+> "Included file ... not found".
 
 ---
 
 ## 5. Installation
 
 ```bash
-nixos-install --flake /mnt/etc/nixos-config#nixos
+nixos-install --flake /mnt/etc/nixos-config#n3zer
 ```
 
 - `nixos-install` will ask for the **root password** — set it.
 - User `n3z` gets `initialPassword = "changeme"`.
 - Home-manager is installed as a NixOS module, nothing to run separately.
+- Hostname will be `nixos-laptop` — change it in `nixos/profiles/laptop.nix`.
 
 When done:
 
@@ -105,8 +134,8 @@ reboot
 # remove the ISO from the drive
 ```
 
-> Replace `#nixos` with the flake output name matching your machine
-> (the checked-in flake defines `nixosConfigurations.n3zer`).
+> Use `#n3zer` for real hardware. `#n3zer-vm` is for the VirtualBox guest and
+> would try to mount the VM's UUIDs.
 
 ---
 
@@ -147,7 +176,7 @@ programs.git = {
 cd ~
 git clone <REPO_URL> # or the path of your repo, e.g. ~/dotfiles
 cd dotfiles
-sudo nixos-rebuild switch --flake .#<hostname>
+sudo nixos-rebuild switch --flake .#n3zer
 ```
 
 Home-manager is applied automatically (it's part of the system).
@@ -158,7 +187,7 @@ Home-manager is applied automatically (it's part of the system).
 
 ```bash
 git add <new_files>
-nixos-rebuild switch --flake .#<hostname>
+nixos-rebuild switch --flake .#n3zer
 ```
 
 The flake is built from the **git index**, not the working tree —
@@ -172,17 +201,47 @@ On first open, lazy.nvim and plugins are fetched from GitHub — internet requir
 nvim
 ```
 
+### 7.5 NVIDIA laptops (optional)
+
+The power menu hides the "GPU Mode" section unless `envycontrol` is present —
+it is **not** in nixpkgs, so it needs its own flake input. To enable GPU
+switching on a hybrid-graphics laptop:
+
+```nix
+# flake.nix
+inputs.envycontrol.url = "github:bayasdev/envycontrol";
+```
+
+```nix
+# nixos/profiles/laptop.nix
+environment.systemPackages = [ inputs.envycontrol.packages.x86_64-linux.default ];
+```
+
+```nix
+# nixos/modules/display.nix
+hardware.nvidia = {
+  modesetting.enable = true;
+  powerManagement.enable = false;   # envycontrol handles switching
+  nvidiaSettings = true;
+};
+```
+
+Integrated-only laptops (Intel/AMD) need none of this — Mesa handles them and
+the section stays hidden.
+
 ---
 
 ## Checklist
 
+- [ ] Secure Boot disabled in firmware (limine)
 - [ ] Partitioned: EFI (vfat) + root (ext4), both mounted at `/mnt` and `/mnt/boot`
-- [ ] `hardware-configuration.nix` regenerated for current UUIDs
-- [ ] `nixos-install --flake ...` finished without errors
+- [ ] `hardware-configuration.nix` regenerated for current UUIDs and `git add`ed
+- [ ] `nixos-install --flake ...#n3zer` finished without errors
 - [ ] Logged in as `n3z`, password changed from `changeme`
 - [ ] Email in `home/home.nix` replaced
-- [ ] `nixos-rebuild switch --flake .#<hostname>` completes cleanly
+- [ ] `nixos-rebuild switch --flake .#n3zer` completes cleanly
 - [ ] niri + quickshell are up, wallpapers in place
+- [ ] Lid close suspends, screen brightness keys work (`brightnessctl`)
 
 ---
 
@@ -191,7 +250,13 @@ nvim
 | Problem | Fix |
 |---|---|
 | `Included file ... not found` during build | File is new and not in git: `git add` → rebuild |
-| Doesn't boot after install | EFI partition mounted at `/boot`, EFI enabled in firmware |
+| Doesn't boot after install | EFI partition mounted at `/boot`, EFI enabled in firmware, Secure Boot off |
+| Sticks at firmware / no boot entry | Secure Boot on, or the ISO wasn't booted in UEFI mode |
+| Boots but black screen | Check `journalctl -b \| grep -i niri`; try `pkill quickshell; quickshell &` |
+| No suspend on lid close | `services.logind.settings.Login.HandleLidSwitch` in `nixos/profiles/laptop.nix` |
 | quickshell silent | `pkill quickshell; quickshell &`, check `journalctl --user` |
+| No network after reboot | `systemctl enable --now NetworkManager` |
+| UUID errors at boot | Regenerated `hardware-configuration.nix` (§4) and `git add`ed it |
+| GPU Mode section missing in power menu | Expected — `envycontrol` is not installed (§7.5) |
 | No network after reboot | `systemctl enable --now NetworkManager` |
 | UUID errors at boot | Regenerate `hardware-configuration.nix` (§4) |

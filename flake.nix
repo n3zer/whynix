@@ -9,18 +9,35 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, ... }@inputs: {
-    nixosConfigurations.n3zer = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [
-        ./nixos/configuration.nix
-        home-manager.nixosModules.home-manager
-        {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.users.n3z = import ./home/home.nix;
-        }
-      ];
-    };
+  outputs = { self, nixpkgs, home-manager, ... }@inputs:
+  let
+    system = "x86_64-linux";
+
+    # shared by every host: modules + home-manager wiring
+    baseModules = [
+      ./nixos/configuration.nix
+      home-manager.nixosModules.home-manager
+      {
+        home-manager.useGlobalPkgs = true;
+        home-manager.useUserPackages = true;
+        home-manager.users.n3z = import ./home/home.nix;
+      }
+    ];
+
+    mkHost = extraModules:
+      nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = baseModules ++ extraModules;
+      };
+  in {
+    # bare metal (laptop / desktop) — no virtualisation bits
+    nixosConfigurations.n3zer = mkHost [
+      ./nixos/profiles/laptop.nix
+    ];
+
+    # VirtualBox guest — reuses this machine's hardware config
+    nixosConfigurations.n3zer-vm = mkHost [
+      ./nixos/profiles/virtualbox-guest.nix
+    ];
   };
 }

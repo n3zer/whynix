@@ -14,8 +14,9 @@ import "../../"
 // the next scheduled query.
 //
 // Exposes:
-//   string currentMode  — "integrated" | "hybrid" | "nvidia"
-//   bool   busy         — true while a switch command is running
+//   bool   available   — false when the envycontrol binary is absent
+//   string currentMode — "integrated" | "hybrid" | "nvidia" ("" when unavailable)
+//   bool   busy        — true while a switch command is running
 //   function switchMode(mode)
 //   function executeSwitch(mode)  — called by ConfirmDialog
 
@@ -24,9 +25,26 @@ QtObject {
 
     property string currentMode: "integrated"
     property bool   busy:        false
+    property bool   available:   false
 
     // Pending mode — held until we confirm the switch succeeded
     property string _pendingMode: ""
+
+    // ── Availability probe ────────────────────────────────────────────────────
+    // envycontrol is not in nixpkgs; it comes from its own flake, so it may
+    // simply not be installed. Probe once and hide the GPU controls if absent
+    // instead of offering buttons that cannot work.
+    property var _probeProc: Process {
+        command: ["sh", "-c", "command -v envycontrol >/dev/null 2>&1 && printf yes"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.available = text.trim() === "yes"
+                if (root.available)
+                    _queryProc.running = true
+            }
+        }
+    }
 
     // ── Query current mode ────────────────────────────────────────────────────
     property var _queryProc: Process {
@@ -41,7 +59,7 @@ QtObject {
     }
 
     function switchMode(mode) {
-        if (mode === root.currentMode || root.busy) return
+        if (!root.available || mode === root.currentMode || root.busy) return
         Popups.closeAll()
         Popups.showConfirm(
             "Switch GPU Mode",
@@ -54,6 +72,6 @@ QtObject {
 
 
     Component.onCompleted: {
-        _queryProc.running = true
+        _probeProc.running = true
     }
 }

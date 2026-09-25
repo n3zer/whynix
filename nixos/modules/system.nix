@@ -7,7 +7,7 @@
 
   # network
   networking.networkmanager.enable = true;
-  networking.hostName = "nixos-vm";
+  # hostName is set per host profile (nixos/profiles/laptop.nix, virtualbox-guest.nix)
 
   # gnome-keyring — хранение паролей (Telegram/Discord/браузер), разблокируется
   # автоматически при входе. greetd подключает PAM-стек `login`
@@ -46,7 +46,7 @@
   # user
   users.users.n3z = {
     isNormalUser = true;
-    extraGroups = [ "wheel" "networkmanager" "video" ];
+    extraGroups = [ "wheel" "networkmanager" "video" "render" "input" ];
     initialPassword = "changeme";
     shell = pkgs.fish;
     ignoreShellProgramCheck = true;

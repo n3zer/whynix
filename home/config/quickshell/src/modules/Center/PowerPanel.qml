@@ -48,22 +48,25 @@ Item {
             }
         }
 
-        Rectangle {
-            anchors.horizontalCenter: parent.horizontalCenter
-            width:  200
-            height: 1
-            color:  Qt.rgba(1, 1, 1, 0.07)
-        }
-
+        // GPU switching — only shown when envycontrol is actually installed
+        // (nixpkgs has no envycontrol package; it needs a separate flake input)
         Column {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 8
+            visible: root.envyService.available
+
+            Rectangle {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width:  200
+                height: 1
+                color:  Qt.rgba(1, 1, 1, 0.07)
+            }
 
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text:           "GPU Mode"
                 font.pixelSize: 11
-                font.weight:    Font.Medium
+                font.weight:     Font.Medium
                 color:          Qt.rgba(1, 1, 1, 0.4)
             }
 

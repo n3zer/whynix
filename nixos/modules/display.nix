@@ -23,5 +23,7 @@
 
   services.accounts-daemon.enable = true;
 
+  hardware.graphics.enable = true;
+
   programs.niri.enable = true;
 }

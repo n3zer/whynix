@@ -18,7 +18,6 @@ window-rule {
     default-column-width { fixed 426; }
     default-window-height { fixed 240; }
     default-floating-position x=16 y=16 relative-to="top-right"
-    open-on-output "Virtual-1"
 }
 
 // Runtime overrides (seat from WallpaperService UpdateBorders):

@@ -36,9 +36,44 @@ QtObject {
     // ── Intel act freq ────────────────────────────────────────────────────────
     property real _actMhz: 0
     property real _maxMhz: 0
+    property string _igpuPath: ""
+    property bool _nvidiaAvailable: false
 
+    property var _discoverProc: Process {
+        command: [
+            "sh",
+            "-c",
+            "for card in /sys/class/drm/card[0-9]*; do [ -r \"$card/device/uevent\" ] || continue; driver=$(sed -n 's/^DRIVER=//p' \"$card/device/uevent\"); case \"$driver\" in i915|xe|amdgpu) if [ -r \"$card/gt/gt0/rps_act_freq_mhz\" ]; then printf '%s' \"$card\"; exit 0; fi;; esac; done"
+        ]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var path = text.trim()
+                root._igpuPath = path
+                if (path === "") {
+                    root.igpu.curMhz = "— MHz"
+                    root.igpu.maxMhz = "— MHz"
+                    root.igpu.freqPercent = 0.0
+                }
+            }
+        }
+    }
+
+    property var _nvidiaDetectProc: Process {
+        command: ["sh", "-c", "command -v nvidia-smi >/dev/null 2>&1 && printf yes"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root._nvidiaAvailable = text.trim() === "yes"
+            }
+        }
+    }
+
+    // ── Intel act freq ────────────────────────────────────────────────────────
     property var _actProc: Process {
-        command: ["cat", "/sys/class/drm/card1/gt/gt0/rps_act_freq_mhz"]
+        command: root._igpuPath === ""
+            ? ["true"]
+            : ["cat", root._igpuPath + "/gt/gt0/rps_act_freq_mhz"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
@@ -55,7 +90,9 @@ QtObject {
 
     // ── Intel max freq ────────────────────────────────────────────────────────
     property var _maxProc: Process {
-        command: ["cat", "/sys/class/drm/card1/gt/gt0/rps_max_freq_mhz"]
+        command: root._igpuPath === ""
+            ? ["true"]
+            : ["cat", root._igpuPath + "/gt/gt0/rps_max_freq_mhz"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
@@ -93,7 +130,7 @@ QtObject {
     // ── Poll timers ───────────────────────────────────────────────────────────
     property var _igpuTimer: Timer {
         interval: 1000
-        running:  root.active
+        running:  root.active && root._igpuPath !== ""
         repeat:   true
         onTriggered: {
             _actProc.running = false
@@ -105,12 +142,19 @@ QtObject {
 
     property var _nvTimer: Timer {
         interval: 1000
-        running:  root.active && root.envyMode !== "integrated"
+        running:  root.active && root._nvidiaAvailable && root.envyMode !== "integrated"
         repeat:   true
         onTriggered: {
             _nvProc.running = false
             _nvProc.running = true
         }
+    }
+
+    onActiveChanged: {
+        if (active && _igpuPath === "")
+            _discoverProc.running = true
+        if (active && !_nvidiaAvailable)
+            _nvidiaDetectProc.running = true
     }
 
     // ── dGPU active state follows envyMode ────────────────────────────────────
@@ -124,9 +168,7 @@ QtObject {
     }
 
     Component.onCompleted: {
-        _actProc.running = true
-        _maxProc.running = true
-        if (envyMode !== "integrated")
-            _nvProc.running = true
+        _discoverProc.running = true
+        _nvidiaDetectProc.running = true
     }
 }

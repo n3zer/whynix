@@ -5,6 +5,7 @@ desktop with a **Quickshell** shell ("Brain Shell" style), Catppuccin/Material-Y
 them rings, and a complete plug-and-use application stack.
 
 Host: `n3zer`, user: `n3z`, flake target: `.#n3zer`.
+A second target, `.#n3zer-vm`, keeps this machine working as a VirtualBox guest.
 
 ---
 
@@ -14,8 +15,13 @@ Host: `n3zer`, user: `n3z`, flake target: `.#n3zer`.
 flake.nix                       # inputs (nixos-unstable + home-manager) and wiring
 nixos/
   configuration.nix             # imports the NixOS modules
+  hardware-configuration.nix    # generated hardware (regenerate per machine)
+  hardware-configuration-vm.nix # this machine's VM disk (VirtualBox target only)
+  profiles/
+    laptop.nix                  # bare metal: hostname, auto-cpufreq, lid handling
+    virtualbox-guest.nix        # guest additions + VBoxClient service fixes
   modules/
-    hardware.nix                # bootloader (limine), VirtualBox guest, bluetooth
+    hardware.nix                # bootloader (limine), bluetooth
     display.nix                 # SDDM (catppuccin-mocha) + niri compositor
     system.nix                  # locale, network, keyring, gvfs, gc, users, ssh
     software.nix                # fonts, xdg portal, system packages, daemons
@@ -124,10 +130,12 @@ home/
 
 | Module | Provides |
 |---|---|
-| `display.nix` | SDDM (Wayland, catppuccin-mocha) + niri |
-| `hardware.nix` | limine bootloader, VirtualBox guest (clipboard), bluetooth (on at boot) |
+| `display.nix` | SDDM (Wayland, catppuccin-mocha) + niri + `hardware.graphics` |
+| `hardware.nix` | limine bootloader, bluetooth (on at boot) |
+| `profiles/laptop.nix` | bare-metal host: hostname, auto-cpufreq, lid suspend, upower |
+| `profiles/virtualbox-guest.nix` | VirtualBox guest: guest additions + fixed `VBoxClient --foreground` units |
 | `sound.nix` | PipeWire (ALSA + PulseAudio) with RTKit |
-| `system.nix` | NetworkManager, OpenSSH, gnome-keyring (+ PAM unlock at login), gvfs, geoclue2, fwupd, auto nix-gc + store optimisation, user `n3z` (wheel/networkmanager/video) |
+| `system.nix` | NetworkManager, OpenSSH, gnome-keyring (+ PAM unlock at login), gvfs, geoclue2, fwupd, auto nix-gc + store optimisation, user `n3z` (wheel/networkmanager/video/render/input) |
 | `software.nix` | flakes, `allowUnfree`, nix-ld, fonts, xdg-portal (niri→gnome), polkit |
 
 ### Fonts (system-wide)
@@ -216,7 +224,8 @@ bindings live in `~/.local/state/niri/binds.user.kdl`.
 ## 5. Maintenance
 
 ```bash
-nixos-rebuild switch --flake .#n3zer
+nixos-rebuild switch --flake .#n3zer      # bare metal / laptop
+nixos-rebuild switch --flake .#n3zer-vm   # this VirtualBox VM
 ```
 
 - The flake builds from the **git index**: every new file must be staged first
