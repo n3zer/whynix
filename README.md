@@ -225,7 +225,7 @@ nixos-rebuild switch --flake .#n3zer
 - `niri validate` checks the compositor config (`~/.config/niri/config.kdl`).
 - Nix store is auto-optimised and garbage-collected (older than 14 days) nightly.
 
-### OmniRoute (`:20128` lazy front → `:20129` backend)
+### OmniRoute (`:20128` socket → `:20129` backend)
 
 The backend binary is **not** fetched via npx at runtime. Install it once into the
 user npm prefix (already done on this machine), matching the service's `PATH`:
@@ -234,6 +234,26 @@ user npm prefix (already done on this machine), matching the service's `PATH`:
 npm install --global omniroute --prefix ~/.npm-global
 ```
 
-`omniroute.service` (socat front on `:20128`) lazily spawns the backend on the
-first connection and forwards to `:20129`. Check: `systemctl status omniroute`
-then `curl 127.0.0.1:20128`.
+Socket activation, no port sniffer and no self-written launcher:
+
+| unit                 | role                                                                       |
+| -------------------- | -------------------------------------------------------------------------- |
+| `omniroute.socket`   | owns `127.0.0.1:20128`, `Accept=no`, triggers the proxy on the first request  |
+| `omniroute-proxy.service` | `systemd-socket-proxyd 127.0.0.1:20129`, bidirectional, exits after idle |
+| `omniroute.service`  | OmniRoute on `127.0.0.1:20129`, `Type=notify` (it sends `READY=1` itself)  |
+
+The proxy is ordered `After=omniroute.service`, so systemd starts the backend and
+waits for its readiness notification before any client byte is proxied. When the
+last connection is gone the proxy exits after `--exit-idle-time` and the backend is
+stopped by `StopWhenUnneeded=`, so nothing stays resident between sessions. The
+daemon never opens a browser (`--no-open`, `BROWSER=false`).
+
+```bash
+systemctl status omniroute.socket omniroute-proxy.service omniroute.service
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:20128/api/monitoring/health
+curl -s http://127.0.0.1:20128/v1/models   # 401 without an API key = proxy works
+journalctl -u omniroute.service -u omniroute-proxy.service -b
+```
+
+`idleTimeout` (function argument of `nixos/packages/omniroute.nix`, default
+`10min`) controls the idle unload; pass `null` to keep the backend resident.

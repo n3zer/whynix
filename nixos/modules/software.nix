@@ -47,7 +47,12 @@ in
     omniroute.package
   ];
 
-  # omniroute front — socat proxy; backend (AI router) starts on demand on first connection
-  systemd.services.omniroute = omniroute.front;
+  # omniroute: socket 20128 -> systemd-socket-proxyd -> backend 20129 on demand
+  systemd.services = {
+    omniroute = omniroute.service;
+    omniroute-proxy = omniroute.proxy;
+  };
+
+  systemd.sockets.omniroute = omniroute.socket;
 
 }
