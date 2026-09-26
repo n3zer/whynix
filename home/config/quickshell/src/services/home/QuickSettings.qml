@@ -194,7 +194,7 @@ StatCard {
     property string hotspotLabel:  ""    // sublabel: "Active" | "Not on ethernet" | ""
     property string _hsSSID:       "BrainShell"
     property string _hsPassword:   "changeme1"
-    property string _hsWifiIface:  "wlan0"
+    property string _hsWifiIface:  ""
 
     readonly property string _hsCfgPath:
         Quickshell.env("HOME") + "/.config/Brain_Shell/src/user_data/hotspot.json"

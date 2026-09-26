@@ -122,6 +122,15 @@ def main():
         if not path:
             continue
         os.makedirs(os.path.dirname(path), exist_ok=True)
+        # Живой файл засевается home.activation через `cp` из store-пути,
+        # и cp сохраняет read-only права (444). У владельца без бита записи
+        # open(path, "w") падает с PermissionError, поэтому перед записью
+        # поднимаем режим на 644 — иначе UI биндов не может сохранить
+        # ни одну правку, включая ребинды медиа-клавиш.
+        if os.path.exists(path):
+            mode = os.stat(path).st_mode & 0o777
+            if not mode & 0o200:
+                os.chmod(path, mode | 0o200)
         with open(path, "w", encoding="utf-8") as f:
             f.write(text)
     print("ok")

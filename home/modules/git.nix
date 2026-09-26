@@ -1,11 +1,11 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, username ? "n3z", ... }:
 
 {
   #git configuration
   programs.git = {
     enable = true;
-    settings.user.name = "n3z";
-    settings.user.email = "your.email@example.com"; # Замените на свою почту
+    settings.user.name = username;
+    settings.user.email = lib.mkDefault "your.email@example.com";
     settings.credential."https://github.com".helper = "!gh auth git-credential";
   };
 }

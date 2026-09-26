@@ -20,9 +20,9 @@ PanelWindow {
         right: true
     }
 
-    Binding { target: ShellState; property: "topBarLWidth"; value: root.lWidth }
-    Binding { target: ShellState; property: "topBarCWidth"; value: root.cWidth }
-    Binding { target: ShellState; property: "topBarRWidth"; value: root.rWidth }
+    Binding { when: !root.screen || root.screen === Quickshell.screens[0]; target: ShellState; property: "topBarLWidth"; value: root.lWidth }
+    Binding { when: !root.screen || root.screen === Quickshell.screens[0]; target: ShellState; property: "topBarCWidth"; value: root.cWidth }
+    Binding { when: !root.screen || root.screen === Quickshell.screens[0]; target: ShellState; property: "topBarRWidth"; value: root.rWidth }
 
     // ── Height shrinks to a border strip in focus mode ───────────────────────
     // Safe to animate on PanelWindow (anchored, no position jank).

@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 
 // ============================================================
@@ -24,21 +25,10 @@ QtObject {
     // ── File watcher ──────────────────────────────────────────────────────────
     property var _file: FileView {
         id: colorsFile
+        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/brain-shell/colors.json"
         watchChanges: true
         onFileChanged: reload()
         onLoaded: root._parse(colorsFile.text())
-    }
-
-    property var _homeProc: Process {
-        command: ["bash", "-c", "echo $HOME"]
-        running: true
-        stdout: SplitParser {
-            onRead: function(line) {
-                var h = line.trim()
-                if (h !== "")
-                    colorsFile.path = h + "/.cache/brain-shell/colors.json"
-            }
-        }
     }
 
     // ── Parser ────────────────────────────────────────────────────────────────

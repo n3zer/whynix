@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import "../"
 import "../../components"
@@ -21,24 +22,8 @@ Item {
     readonly property int clockH:   220
 
     // ── Avatar path ───────────────────────────────────────────────────────────
-    property string _avatarPath: ""
-    property string _staticJpg:  ""   // resolved once: $HOME/.curr_wall_static.jpg
-
-    // Resolve $HOME once, then set the fixed path.
-    // Both gif (magick frame) and non-gif (symlink) cases now land at the
-    // same ~/.curr_wall_static.jpg so no readlink resolution is needed.
-    Process {
-        command: ["bash", "-c", "echo $HOME"]
-        running: true
-        stdout: SplitParser {
-            onRead: function(line) {
-                var h = line.trim()
-                if (h === "") return
-                root._staticJpg  = h + "/.curr_wall_static.jpg"
-                root._avatarPath = root._staticJpg
-            }
-        }
-    }
+    property string _staticJpg:  Quickshell.env("HOME") + "/.curr_wall_static.jpg"
+    property string _avatarPath: _staticJpg
 
     // Re-arm the image on every successful apply.
     // Because the path never changes, Qt's image cache would serve the old

@@ -141,13 +141,31 @@ QtObject {
         }
     }
 
+    property var _nvCheckProc: Process {
+        command: ["sh", "-c", "cat /sys/bus/pci/drivers/nvidia/*/power/runtime_status 2>/dev/null | head -n1"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var s = text.trim()
+                if (s === "active") {
+                    _nvProc.running = false
+                    _nvProc.running = true
+                } else {
+                    root.dgpu.active = false
+                    root.dgpu.usagePercent = 0
+                    root.dgpu.usedVram = "0 MB"
+                }
+            }
+        }
+    }
+
     property var _nvTimer: Timer {
-        interval: 1000
+        interval: 2000
         running:  root.active && root._nvidiaAvailable
         repeat:   true
         onTriggered: {
-            _nvProc.running = false
-            _nvProc.running = true
+            _nvCheckProc.running = false
+            _nvCheckProc.running = true
         }
     }
 

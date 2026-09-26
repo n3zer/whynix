@@ -1,8 +1,8 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, username ? "n3z", ... }:
 
 {
   # locale
-  time.timeZone = "Asia/Almaty";
+  time.timeZone = lib.mkDefault "Asia/Almaty";
   i18n.defaultLocale = "en_US.UTF-8";
 
   # network
@@ -36,18 +36,18 @@
     enable = true;
     startWhenNeeded = true; # поднимать sshd только по подключению (меньше демонов в стоке)
     settings = {
-      PasswordAuthentication = true;
-      PermitRootLogin = "yes";
+      PasswordAuthentication = lib.mkDefault false;
+      PermitRootLogin = lib.mkDefault "no";
     };
   };
 
   environment.shells = [ pkgs.fish ];
 
   # user
-  users.users.n3z = {
+  users.users.${username} = {
     isNormalUser = true;
     extraGroups = [ "wheel" "networkmanager" "video" "render" "input" ];
-    initialPassword = "changeme";
+    initialPassword = lib.mkDefault "changeme";
     shell = pkgs.fish;
     ignoreShellProgramCheck = true;
   };

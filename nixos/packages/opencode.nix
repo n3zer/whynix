@@ -19,4 +19,9 @@ pkgs.stdenv.mkDerivation {
     tar -xzf $src -C $out/bin
     chmod +x $out/bin/opencode
   '';
+
+  meta = with pkgs.lib; {
+    description = "OpenCode AI Coding Assistant";
+    platforms = [ "x86_64-linux" ];
+  };
 }

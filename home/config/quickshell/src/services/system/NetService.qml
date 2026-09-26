@@ -26,9 +26,7 @@ QtObject {
     // Now re-runs every second alongside the stats read. If iface changes, counters
     // reset so the first delta is not a huge spike.
     property var _ifaceProc: Process {
-        command: ["sh", "-c",
-            "ip route get 1.1.1.1 2>/dev/null" +
-            " | awk '/dev/{for(i=1;i<=NF;i++) if($i==\"dev\") print $(i+1)}'"]
+        command: ["sh", "-c", "ip -o route show default 2>/dev/null | awk '{print $5; exit}'"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {

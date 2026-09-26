@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, username ? "n3z", ... }:
 
 {
   imports =
@@ -11,8 +11,8 @@
     ];
 
   #user info
-  home.username = "n3z";
-  home.homeDirectory = "/home/n3z";
+  home.username = username;
+  home.homeDirectory = "/home/${username}";
 
   #home manager state version
   home.stateVersion = "26.05";

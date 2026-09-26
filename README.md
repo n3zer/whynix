@@ -33,7 +33,7 @@ home/
   home.nix                      # user + module imports
   modules/
     packages.nix                # all per-user software
-    shell.nix                   # fish + starship + fastfetch
+    shell.nix                   # fish + bash + starship + atuin
     git.nix                     # git + gh credential helper
     config.nix                  # dotfile symlinks, seeded niri overrides, env vars
     theming.nix                 # GTK/Qt themes, icons, cursor, fonts, dconf
@@ -54,7 +54,7 @@ home/
 | `swayosd` | On-screen display for volume/brightness changes (spawned at startup) |
 | `hyprlock` | Screen locker; shown by the power menu, `Mod+L`, and on idle/sleep |
 | `kando` | Radial "pie" menu for quick actions (`Mod+Space`) |
-| `fastfetch` | System info printed on shell start |
+| `fastfetch` | Run manually — no longer auto-runs at shell start. A wrapper in `home/modules/packages.nix` picks a random ASCII art per run and passes it natively as `--logo <file> --logo-type file`, taking candidates from `home/config/fastfetch/ascii/` (repo) plus `~/.local/share/fastfetch/ascii/` (yours, wins on name clash; override the dir with `FASTFETCH_ASCII_DIR`). Anything with `-c`/`--config`/`--logo` runs plain, which is how the `SystemStats` panel's key/value rows are produced (`systemstats.jsonc`; `config.jsonc` is the greeting profile, now only reachable by hand). Note: the wrapper shadows `pkgs.fastfetch` on purpose — don't add the package too, the names collide. |
 | `cava` | Audio visualizer fed to the shell's visualizer bars |
 | `wallpaper-cycle` | Built-in wrapper over `config/scripts/wallpaper-cycle.sh` — cycles/restores wallpapers (`Mod+W`) |
 
@@ -77,6 +77,7 @@ home/
 | `yazi` | Terminal file manager with thumbnails/previews |
 | `ayugram-desktop` | AyuGram Desktop messenger |
 | `discord` | Discord messenger |
+| `obsidian` | Obsidian 1.13.7 — Markdown-база знаний (Electron, unfree). Нативный Wayland через `ELECTRON_OZONE_PLATFORM_HINT=auto`; намеренно без `dgpu-offload`, текстовый UI тяжёлой растеризации не требует |
 | `spotify` | Music streaming |
 | `mpv` + `yt-dlp` | Video/media player with YouTube support |
 | `imv` | Lightweight image viewer |
@@ -84,6 +85,7 @@ home/
 | `neovim` | Editor (`$EDITOR`) with LSP + Copilot, plugins fetched at first run |
 | `lazygit` | TUI git client |
 | `btop` | System monitor (CPU/mem/disk/net) |
+| `bottom` | Rust-системный монитор, бинарь `btm` (github.com/clementtsang/bottom) — альтернатива `btop` |
 
 ### Screenshots & capture
 

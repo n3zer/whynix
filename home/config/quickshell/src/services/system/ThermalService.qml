@@ -57,6 +57,24 @@ QtObject {
         }
     }
 
+    // Check dGPU runtime power state to avoid waking sleeping card in PRIME mode
+    property var _nvCheckProc: Process {
+        command: ["sh", "-c", "cat /sys/bus/pci/drivers/nvidia/*/power/runtime_status 2>/dev/null | head -n1"]
+        running: false
+        stdout: StdioCollector {
+            onStreamFinished: {
+                var s = text.trim()
+                if (s === "active") {
+                    _nvProc.running = false
+                    _nvProc.running = true
+                } else {
+                    root.gpuTemp    = 0
+                    root.gpuTempStr = (s === "suspended") ? "Sleep" : "—"
+                }
+            }
+        }
+    }
+
     // ── Poll timer ────────────────────────────────────────────────────────────
     property var _timer: Timer {
         interval: 2000
@@ -68,8 +86,8 @@ QtObject {
     function _run() {
         _proc.running   = false
         _proc.running   = true
-        _nvProc.running = false
-        _nvProc.running = true
+        _nvCheckProc.running = false
+        _nvCheckProc.running = true
     }
 
     function _parse(text) {

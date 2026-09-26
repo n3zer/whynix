@@ -32,7 +32,7 @@ QtObject {
     }
     
     property var _pingProc: Process {
-        command: ["ping", "-c", "1", "-W", "3", "1.1.1.1"]
+        command: ["sh", "-c", "ip route show default | grep -q default"]
         running: false
         onExited: function(code) {
             if (code === 0) {
@@ -73,7 +73,7 @@ QtObject {
         )
 
     // ── Paths ──────────────────────────────────────────────────────────────
-    readonly property string _dir:        "/home/n3z/dotfiles"
+    readonly property string _dir:        Quickshell.env("DOTFILES_DIR") || (Quickshell.env("HOME") + "/dotfiles")
     readonly property string _cfgPath:    Quickshell.env("HOME") + "/.config/Brain_Shell/src/user_data/update_prefs.json"
 
     // ── Startup: 30s delay ─────────────────────────────────────────────────

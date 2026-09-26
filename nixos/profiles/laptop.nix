@@ -12,6 +12,25 @@
 
   networking.hostName = "nixos-laptop";
 
+  # Аппаратные параметры ноутбука HP Pavilion (Intel UHD 630 + GTX 1060 Mobile)
+  hardware.nvidia.prime = {
+    intelBusId = "PCI:0@0:2:0";
+    nvidiaBusId = "PCI:0@1:0:0";
+  };
+
+  # Драйверы аппаратного ускорения видео для Intel UHD 630 (Coffee Lake)
+  hardware.graphics = {
+    extraPackages = with pkgs; [
+      intel-media-driver
+      intel-vaapi-driver
+      libvdpau-va-gl
+    ];
+    extraPackages32 = with pkgs.pkgsi686Linux; [
+      intel-media-driver
+      intel-vaapi-driver
+    ];
+  };
+
   # --- Звук: HP Pavilion, Intel HDA 8086:a348 (Cannon Lake) + ALC269 ---------
   #
   # Проблема: единственная ALSA-карта в системе — это HDMI-аудио NVIDIA

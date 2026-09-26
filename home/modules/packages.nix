@@ -1,5 +1,27 @@
 { config, lib, pkgs, ... }:
 
+let
+  # Оборачивает GUI-пакет для запуска через dgpu-offload с безопасным fallback.
+  # symlinkJoin сохраняет .desktop-файлы, иконки и ресурсы пакета, подменяя бинарники в bin/.
+  wrapDgpu = pkg: bins: pkgs.symlinkJoin {
+    name = "${pkg.name}-dgpu";
+    paths = [ pkg ];
+    postBuild = lib.concatMapStringsSep "\n" (bin: ''
+      if [ -e $out/bin/${bin} ]; then
+        rm -f $out/bin/${bin}
+        cat > $out/bin/${bin} <<'EOF'
+#!/usr/bin/env bash
+if command -v dgpu-offload >/dev/null 2>&1; then
+  exec dgpu-offload ${pkg}/bin/${bin} "$@"
+else
+  exec ${pkg}/bin/${bin} "$@"
+fi
+EOF
+        chmod +x $out/bin/${bin}
+      fi
+    '') bins;
+  };
+in
 {
   home.packages = with pkgs; [
     quickshell
@@ -16,7 +38,55 @@
     (pkgs.writeShellScriptBin "open-browser" ''
       exec ${config.home.sessionVariables.BROWSER} "$@"
     '')
-    fastfetch
+    # fastfetch with a random ASCII logo per run.
+    #
+    # The only reason this wrapper exists is the randomness — fastfetch itself
+    # does the rendering via `--logo <file> --logo-type file`. It shadows
+    # pkgs.fastfetch on purpose, so do NOT also list pkgs.fastfetch here: two
+    # providers of one name collide.
+    #
+    # Art is plain .txt, one drawing per file, merged from two dirs:
+    #   ~/.local/share/fastfetch/ascii  yours, writable — just drop a file in
+    #   <repo>/ascii                    built-in, read-only, shadowed by name
+    # Override the user dir with FASTFETCH_ASCII_DIR.
+    (pkgs.writeShellScriptBin "fastfetch" ''
+      set -eu
+
+      # The quickshell SystemStats panel calls `fastfetch -c systemstats` and
+      # wants its key/value layout, logo-less. Any explicit --config/-c (or
+      # --logo from the caller) means "run me exactly as asked".
+      for arg in "$@"; do
+        case "$arg" in
+          -c|--config|--logo) exec ${pkgs.fastfetch}/bin/fastfetch "$@" ;;
+        esac
+      done
+
+      # Glob, not find: the repo dir is a symlink into the nix store and find
+      # will not descend into a symlinked directory without -L.
+      art="$({
+        for d in "''${FASTFETCH_ASCII_DIR:-''${XDG_DATA_HOME:-$HOME/.local/share}/fastfetch/ascii}" "${../config/fastfetch/ascii}"; do
+          [ -d "$d" ] || continue
+          for f in "$d"/*.txt; do
+            [ -f "$f" ] && printf '%s\n' "$f"
+          done
+        done
+      } | awk -v seed="$$-$(date +%s 2>/dev/null)" '
+        BEGIN { srand(seed); n = 0 }
+        {
+          i = split($0, p, "/"); b = p[i]
+          if (b in seen) next
+          seen[b] = 1
+          a[++n] = $0
+        }
+        END { if (n) print a[1 + int(rand() * n)] }
+      ')"
+
+      if [ -n "$art" ]; then
+        exec ${pkgs.fastfetch}/bin/fastfetch --logo "$art" --logo-type file "$@"
+      fi
+      exec ${pkgs.fastfetch}/bin/fastfetch "$@"
+    '')
+
     cava # audio visualizer bars (quickshell CavaService)
     matugen # wallpaper→theme color generator (WallpaperService re-themes on set)
     hyprlock # lock screen (PowerMenu / loginctl lock-session)
@@ -24,7 +94,7 @@
     yazi
     playerctl
     brightnessctl
-    spotify
+    (wrapDgpu spotify [ "spotify" ])
     unzip # copilot.lua extracts copilot-language-server with unzip
 
     # GUI file manager (Cabinet/zathura_pdf_mupdf/zen-browser не в этом ревизии nixpkgs)
@@ -32,14 +102,31 @@
     xdg-utils # xdg-open / mime opening из yazi и других приложений
 
     # chat / messaging
-    ayugram-desktop
-    (pkgs.writeShellScriptBin "ayugram-desktop" ''
-      exec ${pkgs.ayugram-desktop}/bin/AyuGram "$@"
-    '')
-    discord
+    (wrapDgpu ayugram-desktop [ "AyuGram" ])
+    (wrapDgpu discord [ "Discord" "discord" ])
+
+    # Obsidian — Electron-приложение (unfree, allowUnfree уже включён в
+    # nixos/modules/software.nix). Намеренно БЕЗ wrapDgpu, в отличие от
+    # Discord/AyuGram выше: там оффлоад выигрывает, потому что кадры идут
+    # из видео/голоса, здесь же интерфейс — текст и WebView, то есть растеризации
+    # тяжёлой нет. А переключение на NVIDIA в обёртке dgpu-offload заставит
+    # Electron брать EGL-вендор NVIDIA, и каждый кадр будет копироваться
+    # dGPU -> iGPU, потому что композитит niri на Intel (eDP-1 подключён к
+    # iGPU). Чистый проигрыш. Если всё же понадобится — `dgpu-offload obsidian`.
+    #
+    # Wayland: NIXOS_OZONE_WL в системе не выставлен, поэтому флаг
+    # --ozone-platform=wayland из обёртки nixpkgs не добавится. Нативный
+    # Wayland всё равно включится через ELECTRON_OZONE_PLATFORM_HINT=auto
+    # из nixos/modules/nvidia.nix (electron 43), как у discord/antigravity.
+    # Даёт .desktop, иконки hicolor и obsidian-cli (headless-заметки).
+    obsidian
+
+    # settings / utils
+    blueman # bluetooth GUI manager (blueman-manager)
+    hyprsunset # night light support for quicksettings
 
     # media / вьюверы
-    mpv
+    (wrapDgpu mpv [ "mpv" "umpv" ])
     yt-dlp # youtube/video в mpv
     imv # изображения
     zathura # pdf (все плагины идут в составе пакета)
@@ -62,6 +149,12 @@
     # dev utilities
     lazygit
     btop
+    # bottom — Rust-монитор (github.com/clementtsang/bottom), бинарь btm.
+    # Рядом с btop, а не вместо: btop в nixpkgs C++/с heavy widgets, bottom
+    # легче и без GTK. Оба в ~/.local/state/nix профиле — конфликта имён нет
+    # (btop против btm). Кто что показывает: btop — привычный вид, bottom —
+    # если упёрлось в раскладку/производительность btop.
+    bottom
     gcc
     gnumake
     pkg-config
@@ -82,6 +175,7 @@
     cargo-llvm-cov # покрытие кода
     cargo-machete # неиспользуемые зависимости
     fd
+    lsd # замена ls в интерактивных шеллах (алиас в modules/shell.nix)
     ripgrep
     hyperfine # бенчмарки
     just # task-раннер
@@ -95,7 +189,6 @@
 
     # LSP servers (nvim-lspconfig)
     pyright # python
-    rust-analyzer # rust (см. блок rust выше)
     gopls # go
     csharp-ls # c#
     typescript-language-server # js/ts
@@ -112,9 +205,10 @@
 
   # Antigravity — IDE от Google (форк VS Code). Через home-manager-модуль,
   # а не просто пакетом: он даёт .desktop для меню приложений.
-  # package указан явно: в nixpkgs атрибут переименован в antigravity-ide.
+  # package указывается явно: в nixpkgs атрибут переименован в
+  # antigravity-ide, и именно он заворачивается на dGPU (см. wrapDgpu).
   programs.antigravity = {
     enable = true;
-    package = pkgs.antigravity-ide;
+    package = wrapDgpu pkgs.antigravity-ide [ "antigravity-ide" ];
   };
 }

@@ -12,6 +12,7 @@
   outputs = { self, nixpkgs, home-manager, ... }@inputs:
   let
     system = "x86_64-linux";
+    username = "n3z";
 
     # shared by every host: modules + home-manager wiring
     baseModules = [
@@ -20,13 +21,16 @@
       {
         home-manager.useGlobalPkgs = true;
         home-manager.useUserPackages = true;
-        home-manager.users.n3z = import ./home/home.nix;
+        home-manager.backupFileExtension = "hm-backup";
+        home-manager.extraSpecialArgs = { inherit inputs username; };
+        home-manager.users.${username} = import ./home/home.nix;
       }
     ];
 
     mkHost = extraModules:
       nixpkgs.lib.nixosSystem {
         inherit system;
+        specialArgs = { inherit inputs username; };
         modules = baseModules ++ extraModules;
       };
   in {

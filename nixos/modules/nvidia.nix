@@ -55,7 +55,7 @@
     # подхватит GTX 1060. legacy_580 = 580.178.04, LTSB до октября 2028.
     # Если когда-нибудь появится поддержка Pascal в новой ветке — вернуться
     # на stable можно будет одной строкой.
-    package = config.boot.kernelPackages.nvidiaPackages.legacy_580;
+    package = lib.mkDefault config.boot.kernelPackages.nvidiaPackages.legacy_580;
 
     # nvidia-settings — GUI для X11. В чистом Wayland (niri) не нужен,
     # диагностика делается через nvidia-smi / glxinfo / switcherooctl.
@@ -68,22 +68,9 @@
         enableOffloadCmd = true;
       };
 
-      # Проверено по sysfs на ноутбуке (/sys/bus/pci/devices):
-      #   0000:00:02.0  8086:3e9b  Intel UHD 630 (Coffee Lake-H) -> i915
-      #   0000:01:00.0  10de:1c20  GeForce GTX 1060 Mobile (GP106)
-      #   0000:01:00.1  10de:10f1  HDMI-аудио того же dGPU, не display-class
-      # Display-устройств ровно два, поэтому IDs однозначны.
-      #
-      # Формат nixpkgs: PCI:<домен>@<шина>:<устройство>:<функция>.
-      # Домен ОБЯЗАТЕЛЕН — без "@0" значение не соответствует ожидаемой
-      # разметке, поэтому писать надо "PCI:0@0:2:0", а не "PCI:0:2:0".
-      # Значения ДЕСЯТИЧНЫЕ (lspci печатает шестнадцатеричные; тут все цифры
-      # < 10, так что разницы нет).
-      #
-      # Факт: с этими ID PRIME offload проверен вживую —
-      #   nvidia-offload glxinfo -B -> "NVIDIA GeForce GTX 1060 with Max-Q Design"
-      intelBusId = "PCI:0@0:2:0";
-      nvidiaBusId = "PCI:0@1:0:0";
+      # Задаются через lib.mkDefault, переопределяются в профилях хостов (например, profiles/laptop.nix)
+      intelBusId = lib.mkDefault "PCI:0@0:2:0";
+      nvidiaBusId = lib.mkDefault "PCI:0@1:0:0";
     };
   };
 
@@ -140,26 +127,30 @@
     (pkgs.writeShellScriptBin "dgpu-offload" ''
       # Рендерит переданную команду на NVIDIA вместо встроенной Intel UHD 630.
       # Использование: dgpu-offload firefox
-      #
-      # Видеодекодирование НЕ переносится: LIBVA_DRIVER_NAME=iHD остаётся
-      # от сессии, поэтому VA-API decode по-прежнему на iGPU. Для видео это
-      # лишний копирующий обмен Intel->NVIDIA->Intel, так что страницы с
-      # одним лишь видео лучше запускать без обёртки.
       export __NV_PRIME_RENDER_OFFLOAD=1
       export __NV_PRIME_RENDER_OFFLOAD_PROVIDER=NVIDIA-G0
       export __GLX_VENDOR_LIBRARY_NAME=nvidia
       export __EGL_VENDOR_LIBRARY_FILENAMES="${config.hardware.nvidia.package}/share/glvnd/egl_vendor.d/10_nvidia.json"
       export __VK_LAYER_NV_optimus=NVIDIA_only
       export VK_LOADER_DRIVERS_SELECT='*nvidia*'
+
+      # Декодирование видео по умолчанию НЕ трогаем: в сессии стоит
+      # LIBVA_DRIVER_NAME=iHD, и декодирование остаётся на iGPU. Причины не
+      # переключать по умолчанию:
+      #   1) NVDEC на Pascal (GTX 1060) не умеет AV1 — жёсткий пинтинг libva
+      #      на nvidia убирает fallback на iHD/софт для AV1-контента;
+      #   2) когда рендер уже на dGPU, декод на iGPU даёт лишний копирующий
+      #      обмен Intel->NVIDIA->Intel.
+      # Включается явно, когда AV1 не важен:
+      #   DGPU_OFFLOAD_DECODE=nvidia dgpu-offload firefox
+      # NVDEC на этой машине проверен: vainfo с LIBVA_DRIVER_NAME=nvidia
+      # отдаёт "VA-API NVDEC driver [direct backend]".
+      if [ "''${DGPU_OFFLOAD_DECODE:-}" = "nvidia" ]; then
+          export LIBVA_DRIVER_NAME=nvidia
+      fi
+
       exec "$@"
     '')
-  ];
-
-  assertions = [
-    {
-      assertion = builtins.pathExists "${config.hardware.nvidia.package}/share/glvnd/egl_vendor.d/10_nvidia.json";
-      message = "dgpu-offload: в ${config.hardware.nvidia.package} нет share/glvnd/egl_vendor.d/10_nvidia.json — EGL-оффлоад на NVIDIA не заработает.";
-    }
   ];
 
   environment.sessionVariables = {
@@ -169,17 +160,7 @@
     # Electron/Discord/VSCode — автовыбор нативного Wayland вместо XWayland.
     ELECTRON_OZONE_PLATFORM_HINT = "auto";
 
-    # Аппаратное декодирование видео — строго на Intel UHD 630.
-    # iHD обслуживает Gen8+ (Broadwell и новее), куда попадает Coffee Lake;
-    # i965 из intel-vaapi-driver на этом GPU неприменим. Пинтим драйвер явно,
-    # иначе libva при неоднозначном наборе драйверов в /run/opengl-driver
-    # может выбрать не тот, и декодирование уедет в софтвер на CPU.
-    #
-    # Побочный эффект: NVIDIA VA-API (nvidia_drv_video.so) исключается из
-    # выбора. Это осознанно — декодировать видео должна iGPU, а не dGPU,
-    # иначе 3D-карта перестанет засыпать. GL/GLX этим НЕ затрагивается
-    # (для них отдельная переменная __GLX_VENDOR_LIBRARY_NAME, которую
-    # задавать нельзя — она сломала бы ускорение на Intel).
-    LIBVA_DRIVER_NAME = "iHD";
+    # Аппаратное декодирование видео — по умолчанию на Intel UHD 630.
+    LIBVA_DRIVER_NAME = lib.mkDefault "iHD";
   };
 }

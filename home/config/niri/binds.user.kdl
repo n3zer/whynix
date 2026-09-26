@@ -23,6 +23,24 @@ binds {
     XF86AudioLowerVolume  allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05-"; }      // Lower the volume (media key)
     XF86AudioMute         allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }       // Mute or unmute the audio (media key)
 
+    // ---- media playback ----
+    // playerctl ходит в MPRIS по всем игрокам сразу, поэтому кнопки не
+    // привязаны к конкретному приложению: Firefox, Spotify, AyuGram — все
+    // отдают одну сессию, и playerctl сам берёт ту, что сейчас играет.
+    // allow-when-locked — чтобы работали и с экрана блокировки.
+    XF86AudioPlay         allow-when-locked=true { spawn-sh "playerctl play-pause"; }       // Play or pause the current track
+    XF86AudioNext         allow-when-locked=true { spawn-sh "playerctl next"; }             // Next track
+    XF86AudioPrev         allow-when-locked=true { spawn-sh "playerctl previous"; }         // Previous track
+    XF86AudioStop         allow-when-locked=true { spawn-sh "playerctl stop"; }             // Stop the current track
+
+    // ---- brightness ----
+    // На этом ноутбуке intel_backlight отдаёт сырые единицы (max 120000), а не
+    // проценты, поэтому используем относительные 5%+ / 5%- — они единицу
+    // значения не знают и потому не зависят от шкалы. Согласовано с
+    // QuickSettings.qml, который читает состояние через `brightnessctl -m`.
+    XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "brightnessctl set 5%+"; }      // Raise the brightness
+    XF86MonBrightnessDown  allow-when-locked=true { spawn-sh "brightnessctl set 5%-"; }      // Lower the brightness
+
     // ---- windows and columns ----
     Mod+Q                { close-window; }                 // Close the focused window
     Mod+Ctrl+F           { toggle-window-floating; }       // Float or unfloat the focused window

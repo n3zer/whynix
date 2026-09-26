@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import "../"
 import "../components"
@@ -47,24 +48,16 @@ Item {
     ]
     readonly property var _dowNames: ["Su","Mo","Tu","We","Th","Fr","Sa"]
 
-    // ── Boot: resolve $HOME → create file if missing → load ──────────────────
-    Process {
-        command: ["bash", "-c", "echo $HOME"]
-        running: true
-        stdout: SplitParser {
-            onRead: function(line) {
-                var h = line.trim()
-                if (h === "") return
-                root._filePath = h + "/.config/Brain_Shell/src/user_data/tasks.json"
-                mkProc.command = [
-                    "bash", "-c",
-                    "[ -f '" + root._filePath + "' ] || " +
-                    "(mkdir -p \"$HOME/.config/Brain_Shell/src/user_data\" && " +
-                    "printf '%s' '{\"tasks\":[],\"nextId\":0}' > '" + root._filePath + "')"
-                ]
-                mkProc.running = false; mkProc.running = true
-            }
-        }
+    // ── Boot: resolve HOME → create file if missing → load ──────────────────
+    Component.onCompleted: {
+        root._filePath = Quickshell.env("HOME") + "/.config/Brain_Shell/src/user_data/tasks.json"
+        mkProc.command = [
+            "bash", "-c",
+            "[ -f '" + root._filePath + "' ] || " +
+            "(mkdir -p \"$HOME/.config/Brain_Shell/src/user_data\" && " +
+            "printf '%s' '{\"tasks\":[],\"nextId\":0}' > '" + root._filePath + "')"
+        ]
+        mkProc.running = true
     }
 
     Process {

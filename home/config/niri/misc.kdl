@@ -17,7 +17,7 @@
 // отдельном потоке на 580.x иногда даёт артефакты или подвисания при
 // ресайзе/смене мониторов. Если столкнёмся — откат на QSG_RENDER_LOOP=basic
 // одной правкой здесь же.
-spawn-at-startup "env" "QSG_RHI_BACKEND=vulkan" "QSG_RENDER_LOOP=threaded" "VK_LOADER_DRIVERS_SELECT=*nvidia*" "quickshell"
+spawn-at-startup "env" "QSG_RHI_BACKEND=vulkan" "QSG_RENDER_LOOP=threaded" "quickshell"
 spawn-at-startup "bash" "-c" "awww-daemon & until wallpaper-cycle restore; do sleep 0.2; done"
 spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
 spawn-at-startup "swayosd-server" // volume/brightness OSD overlay

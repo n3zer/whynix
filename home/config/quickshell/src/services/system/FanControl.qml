@@ -21,7 +21,15 @@ QtObject {
 
     property string mode: "auto"
     property bool   busy: false
-    
+    property bool   available: false
+
+    property var _checkProc: Process {
+        command: ["sh", "-c", "command -v nbfc >/dev/null 2>&1 && printf yes"]
+        running: true
+        stdout: StdioCollector {
+            onStreamFinished: root.available = text.trim() === "yes"
+        }
+    }
 
     property var _proc: Process {
         command: []
@@ -30,7 +38,7 @@ QtObject {
     }
 
     function setMode(m) {
-        if (root.busy) return
+        if (root.busy || !root.available) return
         root.mode = m
         root.busy = true
 

@@ -14,7 +14,7 @@ QtObject {
 
     readonly property string homeDir: Quickshell.env("HOME")
     readonly property string _niriLivePath: root.homeDir + "/.local/state/niri/binds.user.kdl"
-    readonly property string _niriRepoPath: root.homeDir + "/dotfiles/home/config/niri/binds.user.kdl"
+    readonly property string _niriRepoPath: (Quickshell.env("DOTFILES_DIR") || (root.homeDir + "/dotfiles")) + "/home/config/niri/binds.user.kdl"
 
     // ── niri binds cache ──────────────────────────────────────────────────────
     // Parsed from the live niri config by list_niri_binds.py.

@@ -27,7 +27,7 @@ QtObject {
     property string previewWall:  ""
     property string scheme:       "content"
     property bool   applying:     false
-    property string wallpaperDir: "/home/n3z/dotfiles/home/config/wallpapers"
+    property string wallpaperDir: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/wallpapers"
 
     readonly property var schemes: [
         "content", "tonal-spot", "fidelity", "fruit-salad", "neutral", "monochrome"

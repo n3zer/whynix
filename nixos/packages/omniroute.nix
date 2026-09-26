@@ -12,11 +12,13 @@ let
   omnirouteBin = "${targetHome}/.npm-global/bin/omniroute";
 
   package = pkgs.writeShellScriptBin "omniroute" ''
-    if [ ! -x "${omnirouteBin}" ]; then
-      echo "omniroute: ${omnirouteBin} не найден — выполните: npm install --global omniroute --prefix \$HOME/.npm-global" >&2
-      exit 1
+    if [ -x "${omnirouteBin}" ]; then
+      exec "${omnirouteBin}" "$@"
+    elif command -v omniroute >/dev/null 2>&1; then
+      exec omniroute "$@"
+    else
+      exec ${pkgs.nodejs}/bin/npx --yes omniroute@latest "$@"
     fi
-    exec "${omnirouteBin}" "$@"
   '';
 
   servicePath = lib.concatStringsSep ":" [
