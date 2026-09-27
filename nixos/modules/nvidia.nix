@@ -4,6 +4,35 @@
 # (Pascal, dGPU). Рабочий стол niri рендерится на Intel, NVIDIA спит и
 # просыпается только под нагрузкой через `nvidia-offload`.
 #
+# ── ПОЧЕМУ dGPU-first / prime.sync ЗДЕСЬ НЕВОЗМОЖЕН ──────────────────────────
+# Проверено на живом железе 2026-09-27 (lspci + /sys/class/drm/*/status):
+#
+#   00:02.0  Intel CoffeeLake-H GT2 [UHD 630]     8086:3e9b
+#   01:00.0  NVIDIA GP106M [GTX 1060 Mobile]      10de:1c20
+#
+#   card0 (nvidia) → HDMI-A-2 : disconnected
+#   card1 (i915)   → eDP-1    : CONNECTED   ← единственный рабочий выход
+#                   DP-1     : disconnected
+#                   HDMI-A-1 : disconnected
+#
+# Ноутбук Muxless (Optimus): внутренняя панель физически подключена к iGPU, у
+# NVIDIA НЕТ ни одного подключённого разъёма. Переключить это программно
+# нельзя — нужен аппаратный MUX (переключатель в UEFI), которого здесь нет.
+#
+# Следствия (не «теория», а поведение niri/Smithay):
+#   • niri рендерит на ОДНОМ GPU. Скан-аут eDP-1 всё равно остался бы на
+#     i915, значит каждый кадр шёл бы VRAM→RAM→Intel. По upstream (niri
+#     discussion #3282, FAQ) это именно ПРИЧИНА лагов, а не их лечение.
+#   • `hardware.nvidia.prime.sync` в NixOS генерирует xorg.conf и на niri
+#     (не Xorg) не действует. Переключения render-узла он не делает.
+#   • `WLR_DRM_DEVICES` — переменная wlroots; niri на Smithay её игнорирует.
+#     Если бы понадобилось — только `debug { render-drm-device ... }`.
+#   • `nvidiaPackages.stable` (595.x) не подхватит Pascal вообще, см. ниже
+#     про legacy_580.
+#
+# Вывод: стратегия iGPU-first + on-demand offload — единственная рабочая на
+# этом железе. Не «откатывать» её в dGPU-first без аппаратного MUX.
+#
 # Подключается ТОЛЬКО из nixos/profiles/laptop.nix. На хосте n3zer-vm
 # (VirtualBox, vmsvga) проприетарный драйвер не нужен и ломает гостя.
 { config, lib, pkgs, ... }:
@@ -45,6 +74,17 @@
       # Pascal это значение игнорирует, поэтому оно выключено — иначе получим
       # молчаливо неработающую настройку. Базовая экономия энергии приходит из
       # powerManagement.enable + PRIME offload.
+      #
+      # Проверено вживую 2026-09-27: D3cold на этой машине недостижим НЕ из-за
+      # настроек, а по двум независимым причинам:
+      #   1) RTD3 на Pascal не существует (см. выше), поэтому карта не может
+      #      уйти в D3cold в принципе — только в P8 с открытым контекстом;
+      #   2) /sys/bus/pci/devices/0000:01:00.0/power/control = "on" жёстко
+      #      запрещает runtime-suspend, а niri (PID 1455) держит ~20 открытых
+      #      /dev/nvidia0 после старта — то есть клиент есть всегда, даже если
+      #      ни одна программа не оффлоадится.
+      # Практический вывод: мерить эффект нужно по pstate/памяти, а не по
+      # runtime_status. Источник лишних контекстов устранён в niri/misc.kdl.
       finegrained = false;
     };
 

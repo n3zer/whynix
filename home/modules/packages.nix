@@ -103,7 +103,29 @@ in
 
     # chat / messaging
     (wrapDgpu ayugram-desktop [ "AyuGram" ])
-    (wrapDgpu discord [ "Discord" "discord" ])
+
+    # Discord — Electron, но НАМЕРЕННО без wrapDgpu, в отличие от AyuGram
+    # прямо выше (тоже Electron, и он на dGPU работает — проверено).
+    #
+    # Причина в песочнице: в nixpkgs Discord собран как FHS-образ под
+    # bubblewrap, и launcher — bash-скрипт, который поднимает bwrap. Обёртка
+    # отрабатывает, переменные доезжают до процесса-лаунчера, но на границе
+    # контейнера окружение вытирается целиком: проверено вживую — у bwrap было
+    # 81 переменная со всеми __NV_PRIME_RENDER_OFFLOAD/__EGL_/VK_LOADER_
+    # маркерами, а у настоящего .Discord-wrapped осталась 1. То есть
+    # dGPU-переменные просто не доходят до Electron, и рендер идёт на Intel.
+    # Обёртка здесь не просто бесполезна, а вводит в заблуждение.
+    #
+    # Обойти нечем: discord-unwrapped в этой ревизии nixpkgs отсутствует
+    # (есть только discord и discord-ptb, оба в песочнице). Остался бы патч
+    # сгенерированного nixpkgs-скрипта с --setenv в массив bwrap, но он молча
+    # сломается при обновлении nixpkgs.
+    #
+    # Даже будь песочницы нет, выигрыш сомнителен: интерфейс — текст и WebView,
+    # тяжёлой растеризации мало, а niri композитит на Intel (eDP-1 на iGPU),
+    # так что каждый кадр копировался бы dGPU -> iGPU. Тот же аргумент, что и
+    # для obsidian ниже.
+    discord
 
     # Obsidian — Electron-приложение (unfree, allowUnfree уже включён в
     # nixos/modules/software.nix). Намеренно БЕЗ wrapDgpu, в отличие от

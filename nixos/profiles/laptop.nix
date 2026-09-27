@@ -87,6 +87,60 @@
     options snd_hda_intel dmic_detect=0
   '';
 
+  # ── Планировщик и отзывчивость ОС ───────────────────────────────────────────
+  #
+  # Про governor: он уже НЕ здесь, а в services.auto-cpufreq ниже —
+  # performance от сети, powersave от батареи. Дублировать его через
+  # powerManagement.cpuFreqGovernor нельзя: auto-cpufreq перезаписывает
+  # governor при каждом переключении питания, и статичное значение в
+  # powerManagement его перебьёт, убив переключение на powersave.
+  #
+  # swappiness=10 — на десктопе с 8+ ГБ RAM подкачка почти не нужна, но
+  # напористо свопить при нехватке памяти вредно: страницы процесса
+  # (в т.ч. Qt-рендер quickshell) уходят на диск и возвращаются с задержкой,
+  # что и выглядит как "микрофризы интерфейса".
+  #
+  # vfs_cache_pressure=50 (дефолт ядра 100) — держать больше dentry/inode
+  # кэша: дешевле по памяти, зато быстрее повторные запуски программ и
+  # разрешение путей в трейере/порталах.
+  boot.kernel.sysctl = {
+    "vm.swappiness" = 10;
+    "vm.vfs_cache_pressure" = 50;
+  };
+
+  # ── Firefox на dGPU (только этот хост) ─────────────────────────────────────
+  # Внутренний экран (eDP-1) подключён к iGPU, поэтому сам компоновщик niri
+  # перенести на NVIDIA нельзя, но тяжёлую растеризацию браузера — можно.
+  #
+  # Обёртка живёт здесь, а не в общем nixos/modules/software.nix, потому что
+  # dgpu-offload создаётся в nixos/modules/nvidia.nix и существует только на
+  # этом хосте. Fallback-ветка ниже оставлена как страховка на случай, если
+  # карта в драйвере не поднимется: тогда firefox просто стартует на Intel.
+  #
+  # Собирается через symlinkJoin, а не wrapProgram: в этой ревизии nixpkgs
+  # атрибут pkgs.wrapProgram отсутствует, а через wrapProgram нельзя было бы
+  # сохранить desktop-файлы firefox — они лежат в том же пакете. Имя пакета
+  # остаётся "firefox", чтобы в environment.systemPackages не появилось
+  # двух записей с одним именем.
+  environment.systemPackages = [
+    (pkgs.symlinkJoin {
+      name = "firefox";
+      paths = [ pkgs.firefox ];
+      postBuild = ''
+        rm $out/bin/firefox
+        cat > $out/bin/firefox <<'EOF'
+        #!/usr/bin/env bash
+        if command -v dgpu-offload >/dev/null 2>&1; then
+          exec dgpu-offload ${pkgs.firefox}/bin/firefox "$@"
+        else
+          exec ${pkgs.firefox}/bin/firefox "$@"
+        fi
+        EOF
+        chmod +x $out/bin/firefox
+      '';
+    })
+  ];
+
   # laptop-only hardware services; harmless on a desktop too
   services.auto-cpufreq = {
     enable = true;

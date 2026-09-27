@@ -1,23 +1,37 @@
 //---------------------- startup ----------------------\\
-// Quickshell всегда стартует на dGPU через Vulkan.
-// Композитор при этом продолжает рендериться на Intel UHD 630 — offload
-// затрагивает только клиентский процесс bar'а, а не весь сеанс.
+// Quickshell (Qt Quick) рендерится на Intel UHD 630 — на той же карте, что и
+// сам композитор niri. Никакого offload: бар рисуется на iGPU.
 //
-//   QSG_RHI_BACKEND=vulkan           Qt Quick использует RHI->Vulkan вместо GL
-//   QSG_RENDER_LOOP=threaded         рендер-цикл в отдельном потоке
-//   VK_LOADER_DRIVERS_SELECT=*nvidia*  загрузчик Vulkan грузит ТОЛЬКО NVIDIA ICD
+//   QSG_RENDER_LOOP=threaded   цикл рендера в отдельном потоке, не на GUI-потоке.
+//                              Это дефолт Qt и правильный выбор для анимаций.
+//                              QSG_RENDER_LOOP=basic НАМЕРЕННО не используется:
+//                              он рендерит на GUI-потоке и вязнет сильнее, а не
+//                              быстрее.
 //
-// Про VK_LOADER_DRIVERS_SELECT: без него на этой машине перечисление Vulkan
-// идёт как Intel UHD 630 -> NVIDIA -> llvmpipe, то есть device[0] = Intel, и
-// Qt выбрал бы встроенную карту. Фильтр по имени драйвера оставляет один
-// единственный ICD, поэтому device[0] становится GTX 1060 независимо от
-// прочих переменных.
+// RHI-бэкенд НЕ задаётся — дефолтный OpenGL через Mesa. Замер (QSG_INFO=1):
+//   RENDERER: Mesa Intel(R) UHD Graphics 630 (CFL GT2), GL 4.6
+//   threaded render loop, using vsync: 16.66 ms, llvmpipe отсутствует
 //
-// Известный риск threaded на проприетарном драйвере NVIDIA: цикл рендера в
-// отдельном потоке на 580.x иногда даёт артефакты или подвисания при
-// ресайзе/смене мониторов. Если столкнёмся — откат на QSG_RENDER_LOOP=basic
-// одной правкой здесь же.
-spawn-at-startup "env" "QSG_RHI_BACKEND=vulkan" "QSG_RENDER_LOOP=threaded" "quickshell"
+// Почему убрали QSG_RHI_BACKEND=vulkan + VK_LOADER_DRIVERS_SELECT=*nvidia*
+// (проверено вживую, 2026-09-27 — замеры в отчёте, см. также nvidia.nix):
+//
+//   1. QSG_RHI_BACKEND=vulkan НЕ РАБОТАЛ. При нём Qt всё равно падал на
+//      OpenGL: в логе "Creating QRhi with backend OpenGL". То есть настройка
+//      не давала рендера на Vulkan, но стоила реальной цены ниже.
+//
+//   2. VK_LOADER_DRIVERS_SELECT=*nvidia* заставлял процесс открыть контекст
+//      на GTX 1060. nvidia-smi при этом показывал:
+//          quickshell — 165 MiB VRAM, 50+ открытых /dev/nvidia0
+//      и карта не уходила в сон: 0000:01:00.0/power/runtime_status = active,
+//      runtime_suspended_time = 0 (ни разу за всю сессию).
+//
+//   3. Хуже всего: сам рендер при этом всё равно шёл на Intel (см. п.1), то
+//      есть карта грелась и жгла батарею ВПУСТУЮ, не давая ничего взамен.
+//
+// Итог: dGPU не должен открываться процессами панели вообще. Реальный
+// on-demand оффлоад остаётся только на dgpu-offload / wrapDgpu для тяжёлого
+// софта и игр.
+spawn-at-startup "env" "QSG_RENDER_LOOP=threaded" "quickshell"
 spawn-at-startup "bash" "-c" "awww-daemon & until wallpaper-cycle restore; do sleep 0.2; done"
 spawn-at-startup "wl-paste" "--watch" "cliphist" "store"
 spawn-at-startup "swayosd-server" // volume/brightness OSD overlay

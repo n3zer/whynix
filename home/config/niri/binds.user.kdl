@@ -4,7 +4,7 @@ binds {
 
     // ---- applications ----
     Mod+T           { spawn "alacritty"; }            // Open a terminal
-    Mod+Return         { spawn "open-browser"; }
+    Mod+B         { spawn "open-browser"; }
     Mod+A                { spawn-sh "quickshell ipc call dashboard-launcher toggle"; }     // Open the Apps page in the bar
     Mod+E                { spawn "thunar"; }          // File manager
 
@@ -104,12 +104,12 @@ binds {
     // ---- quickshell menus (opened via IPC) ----
     Mod+M                { spawn-sh "quickshell ipc call dashboard-home toggle"; }       // Home dashboard
     Mod+S                { spawn-sh "quickshell ipc call dashboard-stats toggle"; }      // Stats dashboard
-    Mod+K                { spawn-sh "quickshell ipc call dashboard-kanban toggle"; }     // Kanban dashboard
+    Mod+Shift+T                { spawn-sh "quickshell ipc call dashboard-kanban toggle"; }     // Kanban dashboard
     Mod+Shift+C          { spawn-sh "quickshell ipc call dashboard-config toggle"; }     // Config (Keybinds etc.)
     Mod+O                { spawn-sh "quickshell ipc call audioOut-toggle toggle"; }      // Audio output
     Mod+I                { spawn-sh "quickshell ipc call audioIn-toggle toggle"; }       // Audio input
     Mod+Shift+M          { spawn-sh "quickshell ipc call audioMix-toggle toggle"; }      // Audio mixer
-    Mod+B                { spawn-sh "quickshell ipc call bluetooth-toggle toggle"; }     // Bluetooth
+    Mod+Shift+B                { spawn-sh "quickshell ipc call bluetooth-toggle toggle"; }     // Bluetooth
     Mod+Y                { spawn-sh "quickshell ipc call vpn-toggle toggle"; }           // VPN
     Mod+H                { spawn-sh "quickshell ipc call hotspot-toggle toggle"; }       // Hotspot
     Mod+N                { spawn-sh "quickshell ipc call notification-toggle toggle"; }  // Notifications

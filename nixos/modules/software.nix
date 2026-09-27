@@ -40,37 +40,17 @@ in
     polkit_gnome # polkit-gnome-authentication-agent-1 (spawned by niri)
     wget
     curl
-    # firefox запускается на dGPU: внутренний экран подключён к iGPU, поэтому
-    # сам компоновщик (niri) перенести нельзя, но тяжёлую растеризацию
-    # браузера — можно. Обёртка dgpu-offload живёт в nixos/modules/nvidia.nix
-    # (она подключается только в профиле laptop).
+    # firefox НАМЕРЕННО ОТСУТСТВУЕТ в этом общем модуле.
     #
-    # Декодирование видео намеренно оставлено на iGPU (LIBVA_DRIVER_NAME=iHD
-    # из сессии): NVDEC на Pascal не понимает AV1. Если AV1 не нужен и важнее
-    # снять декод с iGPU — запускай вручную:
-    #   DGPU_OFFLOAD_DECODE=nvidia dgpu-offload firefox
+    # Он host-specific, потому что способ запуска различается:
+    #   • nixos/profiles/laptop.nix        — обёртка dgpu-offload (dGPU есть)
+    #   • nixos/profiles/virtualbox-guest.nix — обычный пакет (dGPU нет)
     #
-    # Собирается через symlinkJoin, а не wrapProgram: в текущем nixpkgs
-    # (nixos-unstable, rev ef34387dd) атрибут pkgs.wrapProgram отсутствует,
-    # а через wrapProgram нельзя было бы сохранить desktop-файлы firefox —
-    # они лежат в том же пакете. Имя пакета остаётся "firefox", чтобы в
-    # environment.systemPackages не появилось двух записей с одним именем.
-    (symlinkJoin {
-      name = "firefox";
-      paths = [ firefox ];
-      postBuild = ''
-        rm $out/bin/firefox
-        cat > $out/bin/firefox <<'EOF'
-        #!/usr/bin/env bash
-        if command -v dgpu-offload >/dev/null 2>&1; then
-          exec dgpu-offload ${firefox}/bin/firefox "$@"
-        else
-          exec ${firefox}/bin/firefox "$@"
-        fi
-        EOF
-        chmod +x $out/bin/firefox
-      '';
-    })
+    # Если объявить его здесь, оба профиля получат по TWO записи с именем
+    # "firefox" ( NixOS склеивает списки environment.systemPackages ), и в
+    # профиле ноутбука одна из них перекроет другую непредсказуемо.
+    # Декодирование видео в обоих случаях остаётся на iGPU через
+    # LIBVA_DRIVER_NAME — NVDEC на Pascal не понимает AV1.
     nodejs
     swayosd
     opencode

@@ -47,7 +47,15 @@
   users.users.${username} = {
     isNormalUser = true;
     extraGroups = [ "wheel" "networkmanager" "video" "render" "input" ];
-    initialPassword = lib.mkDefault "changeme";
+    # initialPassword НАМЕРЕННО НЕ ЗАДАЁТСЯ.
+    #
+    # Раньше здесь стоял initialPassword = "changeme", и это была реальная дыра:
+    # учётная запись с тривиальным паролем на машине, где включён sshd.
+    # Пароль уже задан в /etc/shadow (тот, что вы поставили при первой
+    # настройке) и переживает пересборку — NixOS при отсутствии
+    # initialPassword/hashedPassword НЕ трогает существующий хэш, учётку не
+    # блокирует и пароль не сбрасывает. То есть строка ничего не добавляла,
+    # кроме известного пароля.
     shell = pkgs.fish;
     ignoreShellProgramCheck = true;
   };

@@ -1,12 +1,21 @@
 # VirtualBox guest host profile (.#n3zer-vm).
 #
 # The bare-metal host profile is ./laptop.nix
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   imports = [ ../hardware-configuration-vm.nix ];
 
   networking.hostName = "nixos-vm";
+
+  # firefox обычным пакетом — на этом хосте нет NVIDIA, поэтому обёртка
+  # dgpu-offload из profiles/laptop.nix здесь неприменима (и не нужна:
+  # рендер и так идёт на единственный адаптер vmsvga).
+  #
+  # Объявлено здесь, а не в общем nixos/modules/software.nix, чтобы в
+  # environment.systemPackages не оказалось двух записей с именем "firefox":
+  # NixOS склеивает списки, и на ноутбуке одна перекрыла бы другую.
+  environment.systemPackages = [ pkgs.firefox ];
 
   virtualisation.virtualbox.guest.enable = true;
 
